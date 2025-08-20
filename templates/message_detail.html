@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Message #{{ message.id }} - Support System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-envelope-open"></i> Message #{{ message.id }}</h1>
+            <a href="{{ url_for('messages') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Messages
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Message Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-user"></i> Message Details</h5>
+                    <span class="badge bg-{{ 'warning' if message.status == 'open' else 'info' if message.status == 'in_progress' else 'success' if message.status == 'resolved' else 'danger' }} fs-6">
+                        {{ message.status.replace('_', ' ').title() }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>From:</strong></div>
+                    <div class="col-sm-9">
+                        {{ message.telegram_first_name }} {{ message.telegram_last_name or '' }}
+                        {% if message.telegram_username %}
+                            (@{{ message.telegram_username }})
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>User ID:</strong></div>
+                    <div class="col-sm-9">{{ message.telegram_user_id }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Chat:</strong></div>
+                    <div class="col-sm-9">{{ message.chat_title or 'Private Chat' }} ({{ message.chat_id }})</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Created:</strong></div>
+                    <div class="col-sm-9">{{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Updated:</strong></div>
+                    <div class="col-sm-9">{{ message.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+                {% if message.resolved_at %}
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Resolved:</strong></div>
+                    <div class="col-sm-9">{{ message.resolved_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <strong>Message:</strong>
+                    <div class="mt-2 p-3 bg-light rounded">
+                        {{ message.message_text }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Responses -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-comments"></i> Responses ({{ message.responses|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if message.responses %}
+                    {% for response in message.responses %}
+                    <div class="card mb-3 {{ 'border-primary' if response.is_user_reply else '' }}">
+                        <div class="card-header d-flex justify-content-between align-items-center {{ 'bg-light' if response.is_user_reply else '' }}">
+                            <div>
+                                {% if response.is_user_reply %}
+                                    <strong><i class="fas fa-user text-primary"></i> {{ message.telegram_first_name }} {{ message.telegram_last_name or '' }}</strong>
+                                    <small class="text-muted">(User Reply)</small>
+                                {% else %}
+                                    <strong><i class="fas fa-user-tie text-success"></i> {{ response.user.first_name }} {{ response.user.last_name }}</strong>
+                                    <small class="text-muted">(Support Team)</small>
+                                {% endif %}
+                                <br><small class="text-muted">{{ response.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <div>
+                                {% if response.is_user_reply %}
+                                    <span class="badge bg-primary">User Reply</span>
+                                {% elif response.sent_to_telegram %}
+                                    <span class="badge bg-success">Sent</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Not Sent</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ response.response_text }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                        <p>No responses yet</p>
+                    </div>
+                {% endif %}
+
+                <!-- Response Form -->
+                {% if message.status != 'resolved' %}
+                <div class="mt-4">
+                    <h6>Add Response</h6>
+                    <form method="POST" action="{{ url_for('respond_to_message', message_id=message.id) }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.response_text(class="form-control", rows="4", placeholder="Type your response here...") }}
+                            {% if form.response_text.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.response_text.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Send Response
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Status and Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Actions</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_message_status', message_id=message.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">Change Status:</label>
+                        <select name="status" class="form-select">
+                            <option value="open" {{ 'selected' if message.status == 'open' }}>Open</option>
+                            <option value="in_progress" {{ 'selected' if message.status == 'in_progress' }}>In Progress</option>
+                            <option value="resolved" {{ 'selected' if message.status == 'resolved' }}>Resolved</option>
+                            <option value="escalated" {{ 'selected' if message.status == 'escalated' }}>Escalated</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-save"></i> Update Status
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Assignment -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-user-tag"></i> Assignment</h5>
+            </div>
+            <div class="card-body">
+                {% if message.assigned_to %}
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                        <div>
+                            <strong>{{ message.assigned_to.first_name }} {{ message.assigned_to.last_name }}</strong>
+                            <br><small class="text-muted">{{ message.assigned_to.email }}</small>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-user-slash fa-2x mb-2"></i>
+                        <p>Unassigned</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Priority -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-flag"></i> Priority</h5>
+            </div>
+            <div class="card-body text-center">
+                <span class="badge bg-{{ 'danger' if message.priority == 'urgent' else 'warning' if message.priority == 'high' else 'info' if message.priority == 'normal' else 'secondary' }} fs-6">
+                    {{ message.priority.title() }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

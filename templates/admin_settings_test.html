@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings Test - Support Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2>Admin Settings Test</h2>
+    
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_tab == 'general' else '' }}" href="/settings?tab=general">General</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_tab == 'ai-integration' else '' }}" href="/settings?tab=ai-integration">AI Integration</a>
+        </li>
+    </ul>
+    
+    <!-- Tab content -->
+    <div id="tab-general" class="{{ 'd-block' if active_tab == 'general' else 'd-none' }}">
+        <h3>General Settings</h3>
+        <p>This is the general tab content.</p>
+    </div>
+    
+    <div id="tab-ai-integration" class="{{ 'd-block' if active_tab == 'ai-integration' else 'd-none' }}">
+        <h3>AI Integration Settings</h3>
+        <p>This is the AI Integration tab content.</p>
+        <p>If you can see this, the tab is rendering correctly!</p>
+    </div>
+</div>
+{% endblock %}

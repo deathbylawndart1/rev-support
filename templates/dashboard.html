@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Support System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-tachometer-alt"></i> Support Dashboard</h1>
+        <p class="text-muted">Welcome back, {{ current_user.first_name }}!</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.total }}</h4>
+                        <p class="mb-0">Total Messages</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-envelope fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.open }}</h4>
+                        <p class="mb-0">Open</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.in_progress }}</h4>
+                        <p class="mb-0">In Progress</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.resolved }}</h4>
+                        <p class="mb-0">Resolved</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current On-Call and Recent Messages -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-clock"></i> Current On-Call</h5>
+            </div>
+            <div class="card-body">
+                {% if current_on_call %}
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-user-circle fa-3x text-success"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">{{ current_on_call.first_name }} {{ current_on_call.last_name }}</h6>
+                            <p class="text-muted mb-0">{{ current_on_call.email }}</p>
+                            <span class="badge bg-success">On Duty</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-user-slash fa-3x mb-2"></i>
+                        <p>No one currently on-call</p>
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('schedule') }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-calendar-plus"></i> Set Schedule
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-clock"></i> Recent Messages</h5>
+                <a href="{{ url_for('messages') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    <div class="list-group list-group-flush">
+                        {% for message in messages %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            {{ message.telegram_first_name }} {{ message.telegram_last_name or '' }}
+                                            {% if message.telegram_username %}
+                                                <small class="text-muted">@{{ message.telegram_username }}</small>
+                                            {% endif %}
+                                        </h6>
+                                        <p class="mb-1">{{ message.message_text[:100] }}{% if message.message_text|length > 100 %}...{% endif %}</p>
+                                        <small class="text-muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <div class="ms-2">
+                                        <span class="badge bg-{{ 'warning' if message.status == 'open' else 'info' if message.status == 'in_progress' else 'success' if message.status == 'resolved' else 'danger' }}">
+                                            {{ message.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="{{ url_for('message_detail', message_id=message.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-3x mb-2"></i>
+                        <p>No messages yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('messages', status='open') }}" class="btn btn-warning w-100 mb-2">
+                            <i class="fas fa-exclamation-circle"></i><br>
+                            View Open Messages
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('messages', status='in_progress') }}" class="btn btn-info w-100 mb-2">
+                            <i class="fas fa-clock"></i><br>
+                            In Progress Messages
+                        </a>
+                    </div>
+                    {% if current_user.is_admin %}
+                    <div class="col-md-3">
+                        <a href="{{ url_for('schedule') }}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-calendar-alt"></i><br>
+                            Manage Schedule
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('users') }}" class="btn btn-secondary w-100 mb-2">
+                            <i class="fas fa-users"></i><br>
+                            Manage Users
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh dashboard every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

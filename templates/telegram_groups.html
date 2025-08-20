@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% block title %}Telegram Groups - {{ appearance_settings.company_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Telegram Groups</h5>
+        <button id="btnAddGroup" class="btn btn-sm btn-primary">
+          <i class="fas fa-plus me-1"></i>Add Group
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning d-none" id="groupsAlert"></div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="groupsTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Group ID</th>
+                <th>Description</th>
+                <th>Active</th>
+                <th>Created</th>
+                <th style="width: 130px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="groupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="groupModalTitle">Add Group</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-control" id="groupName" placeholder="Support Team Group">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Telegram Group ID</label>
+          <input type="text" class="form-control" id="groupId" placeholder="-1001234567890">
+          <div class="form-text">Use the Telegram chat ID. For supergroups it usually starts with -100.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description (optional)</label>
+          <input type="text" class="form-control" id="groupDesc" placeholder="Primary support group">
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="groupActive" checked>
+          <label class="form-check-label" for="groupActive">Active</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveGroupBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Deactivate Group</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to deactivate this group? You can reactivate it later.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Deactivate</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const alertBox = document.getElementById('groupsAlert');
+  const tableBody = document.querySelector('#groupsTable tbody');
+  const addBtn = document.getElementById('btnAddGroup');
+  const groupModalEl = document.getElementById('groupModal');
+  const groupModal = new bootstrap.Modal(groupModalEl);
+  const deleteModalEl = document.getElementById('deleteModal');
+  const deleteModal = new bootstrap.Modal(deleteModalEl);
+
+  let editId = null;
+  let deleteId = null;
+
+  function showAlert(msg, type = 'warning') {
+    alertBox.textContent = msg;
+    alertBox.classList.remove('d-none', 'alert-warning', 'alert-danger', 'alert-success');
+    alertBox.classList.add('alert-' + type);
+  }
+  function hideAlert() { alertBox.classList.add('d-none'); }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    try { const d = new Date(iso); return d.toLocaleString(); } catch { return iso; }
+  }
+
+  async function loadGroups() {
+    hideAlert();
+    tableBody.innerHTML = '<tr><td colspan="6" class="text-muted">Loading...</td></tr>';
+    try {
+      const res = await fetch('/api/telegram_groups');
+      if (!res.ok) throw new Error('Failed to load');
+      const groups = await res.json();
+      if (!Array.isArray(groups)) throw new Error('Invalid response');
+      if (groups.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-muted">No groups configured.</td></tr>';
+        return;
+      }
+      tableBody.innerHTML = '';
+      groups.forEach(g => tableBody.appendChild(groupRow(g)));
+    } catch (e) {
+      tableBody.innerHTML = '';
+      showAlert('Failed to load groups. Please try again.');
+    }
+  }
+
+  function groupRow(g) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(g.name)}</td>
+      <td><code>${escapeHtml(g.telegram_group_id)}</code></td>
+      <td>${escapeHtml(g.description || '')}</td>
+      <td>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" ${g.is_active ? 'checked' : ''} data-id="${g.id}" data-action="toggle" />
+        </div>
+      </td>
+      <td>${fmtDate(g.created_at)}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-2" data-id="${g.id}" data-action="edit"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-outline-danger" data-id="${g.id}" data-action="delete"><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    return tr;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]+/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  addBtn.addEventListener('click', () => {
+    editId = null;
+    document.getElementById('groupModalTitle').textContent = 'Add Group';
+    document.getElementById('groupName').value = '';
+    document.getElementById('groupId').value = '';
+    document.getElementById('groupDesc').value = '';
+    document.getElementById('groupActive').checked = true;
+    groupModal.show();
+  });
+
+  document.getElementById('saveGroupBtn').addEventListener('click', async () => {
+    const name = document.getElementById('groupName').value.trim();
+    const telegram_group_id = document.getElementById('groupId').value.trim();
+    const description = document.getElementById('groupDesc').value.trim();
+    const is_active = document.getElementById('groupActive').checked;
+    if (!name || !telegram_group_id) {
+      showAlert('Name and Telegram Group ID are required.', 'danger');
+      return;
+    }
+    try {
+      const method = editId ? 'PUT' : 'POST';
+      const url = editId ? `/api/telegram_groups/${editId}` : '/api/telegram_groups';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, telegram_group_id, description, is_active })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      groupModal.hide();
+      await loadGroups();
+      showAlert('Group saved successfully.', 'success');
+    } catch (e) {
+      showAlert('Failed to save group: ' + (e.message || e), 'danger');
+    }
+  });
+
+  tableBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const id = btn.getAttribute('data-id');
+    const action = btn.getAttribute('data-action');
+    if (action === 'edit') {
+      // Load current row data from table
+      const row = btn.closest('tr');
+      const cells = row.querySelectorAll('td');
+      editId = id;
+      document.getElementById('groupModalTitle').textContent = 'Edit Group';
+      document.getElementById('groupName').value = cells[0].textContent.trim();
+      document.getElementById('groupId').value = cells[1].innerText.trim();
+      document.getElementById('groupDesc').value = cells[2].textContent.trim();
+      document.getElementById('groupActive').checked = row.querySelector('input[type="checkbox"]').checked;
+      groupModal.show();
+    } else if (action === 'delete') {
+      deleteId = id;
+      deleteModal.show();
+    }
+  });
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`/api/telegram_groups/${deleteId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
+      deleteModal.hide();
+      await loadGroups();
+      showAlert('Group deactivated.', 'success');
+    } catch (e) {
+      showAlert('Failed to deactivate group: ' + (e.message || e), 'danger');
+    } finally {
+      deleteId = null;
+    }
+  });
+
+  tableBody.addEventListener('change', async (e) => {
+    const input = e.target;
+    if (input.matches('input[type="checkbox"][data-action="toggle"]')) {
+      const id = input.getAttribute('data-id');
+      try {
+        const res = await fetch(`/api/telegram_groups/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: input.checked })
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (e) {
+        input.checked = !input.checked; // revert
+        showAlert('Failed to update status.', 'danger');
+      }
+    }
+  });
+
+  // Initial load
+  loadGroups();
+</script>
+{% endblock %}

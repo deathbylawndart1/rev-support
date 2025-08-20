@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: support_web
+    ports:
+      - "5001:5001"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/support_system.db}
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - PORT=${PORT:-5001}
+    volumes:
+      - support_instance:/app/instance
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: support_bot
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - SUPPORT_GROUP_ID=${SUPPORT_GROUP_ID:-}
+      - FORWARD_SUPPORT_TO_GROUP=${FORWARD_SUPPORT_TO_GROUP:-false}
+      - WEB_DASHBOARD_URL=${WEB_DASHBOARD_URL:-http://web:5001}
+      - ESCALATION_TIMEOUT=${ESCALATION_TIMEOUT:-900}
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/support_system.db}
+    depends_on:
+      - web
+    volumes:
+      - support_instance:/app/instance
+    restart: unless-stopped
+
+volumes:
+  support_instance:

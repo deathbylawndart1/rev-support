@@ -1,0 +1,1001 @@
+{% extends "base.html" %}
+
+{% block title %}Node-RED Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-project-diagram"></i> Node-RED Dashboard</h1>
+                <div>
+                    <button class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#addVpnModal">
+                        <i class="fas fa-shield-alt"></i> Add VPN
+                    </button>
+                    <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addConnectionModal">
+                        <i class="fas fa-plus"></i> Add Connection
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWidgetModal">
+                        <i class="fas fa-plus"></i> Add Widget
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VPN Connections and Node-RED Connections Side by Side -->
+    <div class="row mb-4">
+        <!-- VPN Connections Section - Left Side -->
+        <div class="col-lg-6 mb-3">
+            <div class="section-container h-100">
+                <h3 class="section-header"><i class="fas fa-shield-alt"></i> VPN Connections</h3>
+                <div class="section-content">
+                    <div class="row" id="vpnCards">
+                {% for vpn in vpn_connections %}
+                <div class="col-12 mb-3">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="card-title mb-2">{{ vpn.name }}</h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editVpn({{ vpn.id }})">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteVpn({{ vpn.id }})">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="card-text small mb-2">
+                                <strong>Type:</strong> {{ vpn.vpn_type.upper() }}<br>
+                                {% if vpn.server_host %}
+                                <strong>Server:</strong> {{ vpn.server_host }}{% if vpn.server_port %}:{{ vpn.server_port }}{% endif %}<br>
+                                {% endif %}
+                                <strong>Status:</strong> 
+                                {% if vpn.is_connected %}
+                                    <span class="badge bg-success">Connected</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Disconnected</span>
+                                {% endif %}
+                            </p>
+                            <div class="d-flex gap-1 mb-2">
+                                {% if vpn.is_connected %}
+                                    <button class="btn btn-sm btn-danger" onclick="disconnectVpn({{ vpn.id }})">
+                                        <i class="fas fa-stop"></i> Disconnect
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-success" onclick="connectVpn({{ vpn.id }})">
+                                        <i class="fas fa-play"></i> Connect
+                                    </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-info" onclick="checkVpnStatus({{ vpn.id }})">
+                                    <i class="fas fa-sync"></i> Status
+                                </button>
+                            </div>
+                            {% if vpn.last_connected %}
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> Last connected: {{ vpn.last_connected.strftime('%Y-%m-%d %H:%M:%S') }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                        {% if not vpn_connections %}
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-info-circle"></i> No VPN connections configured. Add a VPN connection to access remote Node-RED devices securely.
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Node-RED Connections Section - Right Side -->
+        <div class="col-lg-6 mb-3">
+            <div class="section-container h-100">
+                <h3 class="section-header">Connections</h3>
+                <div class="section-content">
+                    <div class="row" id="connectionCards">
+                {% for connection in connections %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title">{{ connection.name }}</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editConnection({{ connection.id }})">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteConnection({{ connection.id }})">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="card-text">
+                                <strong>Host:</strong> {{ connection.host }}:{{ connection.port }}<br>
+                                <strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if connection.is_connected else 'danger' }}">
+                                    {{ 'Connected' if connection.is_connected else 'Disconnected' }}
+                                </span><br>
+                                <strong>Widgets:</strong> {{ connection.widgets|length }}
+                            </p>
+                            {% if connection.last_connected %}
+                            <small class="text-muted">Last connected: {{ connection.last_connected.strftime('%Y-%m-%d %H:%M') }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not connections %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No Node-RED connections configured. Click "Add Connection" to get started.
+                    </div>
+                </div>
+                {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Widget Dashboard Grid -->
+    <div class="row">
+        <div class="col-12">
+            <h3>Widget Dashboard</h3>
+            <div class="card">
+                <div class="card-body">
+                    <div id="widgetGrid" class="widget-grid">
+                        {% for widget in widgets %}
+                        <div class="widget-container" data-widget-id="{{ widget.id }}" 
+                             style="grid-column: span {{ widget.width }}; grid-row: span {{ widget.height }};">
+                            <div class="card widget-card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">{{ widget.name }}</h6>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                            <i class="fas fa-cog"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="editWidget({{ widget.id }})">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteWidget({{ widget.id }})">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="widget-content" data-widget-type="{{ widget.widget_type }}">
+                                        <div class="widget-loading text-center">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                        <div class="widget-data" style="display: none;">
+                                            <!-- Widget data will be populated here -->
+                                        </div>
+                                        <div class="widget-error" style="display: none;">
+                                            <div class="alert alert-danger mb-0">
+                                                <i class="fas fa-exclamation-triangle"></i> Connection Error
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-server"></i> {{ widget.connection.name }} | 
+                                        <i class="fas fa-clock"></i> {{ widget.refresh_interval }}s
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not widgets %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> No widgets configured. Add a Node-RED connection and create widgets to display data.
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Connection Modal -->
+<div class="modal fade" id="addConnectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Node-RED Connection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="connectionForm">
+                    <div class="mb-3">
+                        <label for="connectionName" class="form-label">Connection Name</label>
+                        <input type="text" class="form-control" id="connectionName" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-8">
+                            <label for="connectionHost" class="form-label">Host</label>
+                            <input type="text" class="form-control" id="connectionHost" placeholder="localhost" required>
+                        </div>
+                        <div class="col-4">
+                            <label for="connectionPort" class="form-label">Port</label>
+                            <input type="number" class="form-control" id="connectionPort" value="1880" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="connectionUsername" class="form-label">Username (Optional)</label>
+                        <input type="text" class="form-control" id="connectionUsername">
+                    </div>
+                    <div class="mb-3">
+                        <label for="connectionPassword" class="form-label">Password (Optional)</label>
+                        <input type="password" class="form-control" id="connectionPassword">
+                    </div>
+                    <div class="mb-3">
+                        <label for="connectionApiKey" class="form-label">API Key (Optional)</label>
+                        <input type="text" class="form-control" id="connectionApiKey">
+                    </div>
+                    <div class="mb-3">
+                        <label for="connectionVpn" class="form-label">VPN Connection (Optional)</label>
+                        <select class="form-select" id="connectionVpn">
+                            <option value="">No VPN Required</option>
+                            {% for vpn in vpn_connections %}
+                            <option value="{{ vpn.id }}">{{ vpn.name }} ({{ vpn.vpn_type.upper() }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select a VPN connection if this Node-RED server requires VPN access.</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoConnectVpn" checked>
+                            <label class="form-check-label" for="autoConnectVpn">
+                                Auto-connect VPN before accessing Node-RED
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="saveConnection()">Save Connection</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Widget Modal -->
+<div class="modal fade" id="addWidgetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Widget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="widgetForm">
+                    <div class="mb-3">
+                        <label for="widgetConnection" class="form-label">Connection</label>
+                        <select class="form-select" id="widgetConnection" required>
+                            <option value="">Select a connection...</option>
+                            {% for connection in connections %}
+                            <option value="{{ connection.id }}">{{ connection.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="widgetName" class="form-label">Widget Name</label>
+                        <input type="text" class="form-control" id="widgetName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="widgetType" class="form-label">Widget Type</label>
+                        <select class="form-select" id="widgetType" required>
+                            <option value="">Select widget type...</option>
+                            <option value="gauge">Gauge</option>
+                            <option value="chart">Chart</option>
+                            <option value="text">Text Display</option>
+                            <option value="switch">Switch/Button</option>
+                            <option value="led">LED Indicator</option>
+                            <option value="slider">Slider</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="widgetEndpoint" class="form-label">Node-RED Endpoint</label>
+                        <input type="text" class="form-control" id="widgetEndpoint" placeholder="/api/sensor/temperature" required>
+                        <div class="form-text">The API endpoint or topic to fetch data from Node-RED</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <label for="widgetWidth" class="form-label">Width</label>
+                            <select class="form-select" id="widgetWidth">
+                                <option value="1">1 Column</option>
+                                <option value="2" selected>2 Columns</option>
+                                <option value="3">3 Columns</option>
+                                <option value="4">4 Columns</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="widgetHeight" class="form-label">Height</label>
+                            <select class="form-select" id="widgetHeight">
+                                <option value="1">1 Row</option>
+                                <option value="2" selected>2 Rows</option>
+                                <option value="3">3 Rows</option>
+                                <option value="4">4 Rows</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="widgetRefresh" class="form-label">Refresh Interval (seconds)</label>
+                        <input type="number" class="form-control" id="widgetRefresh" value="5" min="1" max="300">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveWidget()">Save Widget</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add VPN Connection Modal -->
+<div class="modal fade" id="addVpnModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add VPN Connection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="vpnForm">
+                    <div class="mb-3">
+                        <label for="vpnName" class="form-label">VPN Connection Name</label>
+                        <input type="text" class="form-control" id="vpnName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vpnType" class="form-label">VPN Type</label>
+                        <select class="form-select" id="vpnType" required>
+                            <option value="">Select VPN Type...</option>
+                            <option value="openvpn">OpenVPN</option>
+                            <option value="wireguard">WireGuard</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Configuration Method -->
+                    <div class="mb-3">
+                        <label class="form-label">Configuration Method</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="configMethod" id="configFile" value="file" checked>
+                            <label class="form-check-label" for="configFile">
+                                Upload Configuration File (.ovpn, .conf)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="configMethod" id="configManual" value="manual">
+                            <label class="form-check-label" for="configManual">
+                                Manual Configuration
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload Section -->
+                    <div id="fileConfigSection">
+                        <div class="mb-3">
+                            <label for="vpnConfigFile" class="form-label">Upload Configuration File</label>
+                            <input type="file" class="form-control" id="vpnConfigFile" accept=".ovpn,.conf">
+                            <div class="form-text">Upload your VPN configuration file (.ovpn for OpenVPN, .conf for WireGuard)</div>
+                        </div>
+                        <div class="mb-3" id="uploadedFileName" style="display: none;">
+                            <div class="alert alert-success">
+                                <i class="fas fa-file-check"></i> <span id="fileName"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Manual Configuration Section -->
+                    <div id="manualConfigSection" style="display: none;">
+                        <div class="row">
+                            <div class="col-8">
+                                <label for="vpnServerHost" class="form-label">Server Host</label>
+                                <input type="text" class="form-control" id="vpnServerHost">
+                            </div>
+                            <div class="col-4">
+                                <label for="vpnServerPort" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="vpnServerPort" value="1194">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="vpnUsername" class="form-label">Username (Optional)</label>
+                            <input type="text" class="form-control" id="vpnUsername">
+                        </div>
+                        <div class="mb-3">
+                            <label for="vpnPassword" class="form-label">Password (Optional)</label>
+                            <input type="password" class="form-control" id="vpnPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label for="vpnCaCert" class="form-label">CA Certificate Path</label>
+                            <input type="text" class="form-control" id="vpnCaCert" placeholder="/path/to/ca.crt">
+                        </div>
+                        <div class="mb-3">
+                            <label for="vpnClientCert" class="form-label">Client Certificate Path</label>
+                            <input type="text" class="form-control" id="vpnClientCert" placeholder="/path/to/client.crt">
+                        </div>
+                        <div class="mb-3">
+                            <label for="vpnPrivateKey" class="form-label">Private Key Path</label>
+                            <input type="text" class="form-control" id="vpnPrivateKey" placeholder="/path/to/client.key">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="saveVpn()">Save VPN Connection</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.widget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    min-height: 400px;
+}
+
+.widget-card {
+    border: 1px solid #dee2e6;
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.widget-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.widget-content {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Equal Height Sections Styling */
+.section-container {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    display: flex;
+    flex-direction: column;
+    min-height: 250px;
+    padding: 1.25rem;
+}
+
+.section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.section-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-content .row {
+    flex: 1;
+}
+
+/* Enhanced card styling within sections */
+.section-content .card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.section-content .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .section-container {
+        min-height: auto;
+        margin-bottom: 1rem;
+    }
+}
+
+.connection-status {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.connection-status.connected {
+    background-color: #28a745;
+}
+
+.connection-status.disconnected {
+    background-color: #dc3545;
+}
+</style>
+
+<script>
+// Node-RED Dashboard JavaScript
+let refreshIntervals = {};
+
+// Initialize dashboard on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeWidgets();
+});
+
+function initializeWidgets() {
+    const widgets = document.querySelectorAll('[data-widget-id]');
+    widgets.forEach(widget => {
+        const widgetId = widget.dataset.widgetId;
+        startWidgetRefresh(widgetId);
+    });
+}
+
+function startWidgetRefresh(widgetId) {
+    // Clear existing interval if any
+    if (refreshIntervals[widgetId]) {
+        clearInterval(refreshIntervals[widgetId]);
+    }
+    
+    // Initial data fetch
+    fetchWidgetData(widgetId);
+    
+    // Set up periodic refresh
+    refreshIntervals[widgetId] = setInterval(() => {
+        fetchWidgetData(widgetId);
+    }, 5000); // Default 5 seconds, can be customized per widget
+}
+
+function fetchWidgetData(widgetId) {
+    fetch(`/api/node-red/data/${widgetId}`)
+        .then(response => response.json())
+        .then(data => {
+            const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
+            const loadingElement = widget.querySelector('.widget-loading');
+            const dataElement = widget.querySelector('.widget-data');
+            const errorElement = widget.querySelector('.widget-error');
+            
+            if (data.status === 'success') {
+                loadingElement.style.display = 'none';
+                errorElement.style.display = 'none';
+                dataElement.style.display = 'block';
+                
+                // Update widget content based on type
+                const widgetType = widget.querySelector('.widget-content').dataset.widgetType;
+                updateWidgetContent(dataElement, widgetType, data.data);
+            } else {
+                loadingElement.style.display = 'none';
+                dataElement.style.display = 'none';
+                errorElement.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching widget data:', error);
+            const widget = document.querySelector(`[data-widget-id="${widgetId}"]`);
+            const loadingElement = widget.querySelector('.widget-loading');
+            const dataElement = widget.querySelector('.widget-data');
+            const errorElement = widget.querySelector('.widget-error');
+            
+            loadingElement.style.display = 'none';
+            dataElement.style.display = 'none';
+            errorElement.style.display = 'block';
+        });
+}
+
+function updateWidgetContent(element, type, data) {
+    switch (type) {
+        case 'text':
+            element.innerHTML = `<div class="text-center"><h4>${data}</h4></div>`;
+            break;
+        case 'gauge':
+            element.innerHTML = `
+                <div class="text-center">
+                    <div class="h5">${data}</div>
+                    <div class="progress mt-2">
+                        <div class="progress-bar" style="width: ${Math.min(100, Math.max(0, data))}%"></div>
+                    </div>
+                </div>`;
+            break;
+        case 'led':
+            const isOn = data === true || data === 1 || data === 'on' || data === 'true';
+            element.innerHTML = `
+                <div class="text-center">
+                    <div class="connection-status ${isOn ? 'connected' : 'disconnected'}" style="width: 30px; height: 30px;"></div>
+                    <div class="mt-2">${isOn ? 'ON' : 'OFF'}</div>
+                </div>`;
+            break;
+        default:
+            element.innerHTML = `<div class="text-center"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+    }
+}
+
+function saveConnection() {
+    const formData = {
+        name: document.getElementById('connectionName').value,
+        host: document.getElementById('connectionHost').value,
+        port: parseInt(document.getElementById('connectionPort').value),
+        username: document.getElementById('connectionUsername').value || null,
+        password: document.getElementById('connectionPassword').value || null,
+        api_key: document.getElementById('connectionApiKey').value || null
+    };
+    
+    fetch('/api/node-red/connections', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error saving connection: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving connection');
+    });
+}
+
+function saveWidget() {
+    const formData = {
+        connection_id: parseInt(document.getElementById('widgetConnection').value),
+        name: document.getElementById('widgetName').value,
+        widget_type: document.getElementById('widgetType').value,
+        endpoint: document.getElementById('widgetEndpoint').value,
+        width: parseInt(document.getElementById('widgetWidth').value),
+        height: parseInt(document.getElementById('widgetHeight').value),
+        refresh_interval: parseInt(document.getElementById('widgetRefresh').value)
+    };
+    
+    fetch('/api/node-red/widgets', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error saving widget: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving widget');
+    });
+}
+
+function deleteConnection(connectionId) {
+    if (confirm('Are you sure you want to delete this connection? All associated widgets will also be deleted.')) {
+        fetch(`/api/node-red/connections/${connectionId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        });
+    }
+}
+
+function deleteWidget(widgetId) {
+    if (confirm('Are you sure you want to delete this widget?')) {
+        fetch(`/api/node-red/widgets/${widgetId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        });
+    }
+}
+
+// Clean up intervals when page unloads
+window.addEventListener('beforeunload', function() {
+    Object.values(refreshIntervals).forEach(interval => {
+        clearInterval(interval);
+    });
+});
+
+// VPN Management Functions
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuration method toggle
+    const configFileRadio = document.getElementById('configFile');
+    const configManualRadio = document.getElementById('configManual');
+    const fileConfigSection = document.getElementById('fileConfigSection');
+    const manualConfigSection = document.getElementById('manualConfigSection');
+    
+    if (configFileRadio && configManualRadio) {
+        configFileRadio.addEventListener('change', function() {
+            if (this.checked) {
+                fileConfigSection.style.display = 'block';
+                manualConfigSection.style.display = 'none';
+            }
+        });
+        
+        configManualRadio.addEventListener('change', function() {
+            if (this.checked) {
+                fileConfigSection.style.display = 'none';
+                manualConfigSection.style.display = 'block';
+            }
+        });
+    }
+    
+    // File upload feedback
+    const fileInput = document.getElementById('vpnConfigFile');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const uploadedFileName = document.getElementById('uploadedFileName');
+            const fileName = document.getElementById('fileName');
+            
+            if (this.files && this.files[0]) {
+                fileName.textContent = this.files[0].name;
+                uploadedFileName.style.display = 'block';
+            } else {
+                uploadedFileName.style.display = 'none';
+            }
+        });
+    }
+});
+
+function saveVpn() {
+    const vpnData = {
+        name: document.getElementById('vpnName').value,
+        vpn_type: document.getElementById('vpnType').value
+    };
+    
+    const configMethod = document.querySelector('input[name="configMethod"]:checked').value;
+    
+    if (configMethod === 'file') {
+        // Handle file upload first
+        const fileInput = document.getElementById('vpnConfigFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a configuration file to upload.');
+            return;
+        }
+        
+        // Upload file first
+        const formData = new FormData();
+        formData.append('config_file', file);
+        
+        // Show loading state
+        const saveButton = document.querySelector('button[onclick="saveVpn()"]');
+        const originalText = saveButton.innerHTML;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        saveButton.disabled = true;
+        
+        fetch('/api/vpn/upload-config', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(uploadData => {
+            if (uploadData.status === 'success') {
+                // File uploaded successfully, now create VPN connection
+                vpnData.config_file_path = uploadData.file_path;
+                createVpnConnection(vpnData, saveButton, originalText);
+            } else {
+                alert('File upload failed: ' + (uploadData.message || 'Unknown error'));
+                saveButton.innerHTML = originalText;
+                saveButton.disabled = false;
+            }
+        })
+        .catch(error => {
+            alert('File upload error: ' + error.message);
+            saveButton.innerHTML = originalText;
+            saveButton.disabled = false;
+        });
+    } else {
+        // Manual configuration
+        vpnData.server_host = document.getElementById('vpnServerHost').value;
+        vpnData.server_port = parseInt(document.getElementById('vpnServerPort').value);
+        vpnData.username = document.getElementById('vpnUsername').value;
+        vpnData.password = document.getElementById('vpnPassword').value;
+        vpnData.ca_cert_path = document.getElementById('vpnCaCert').value;
+        vpnData.certificate_path = document.getElementById('vpnClientCert').value;
+        vpnData.private_key_path = document.getElementById('vpnPrivateKey').value;
+        
+        createVpnConnection(vpnData);
+    }
+}
+
+function createVpnConnection(vpnData, saveButton, originalText) {
+    fetch('/api/vpn/connections', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(vpnData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error creating VPN connection: ' + (data.message || 'Unknown error'));
+            if (saveButton && originalText) {
+                saveButton.innerHTML = originalText;
+                saveButton.disabled = false;
+            }
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+        if (saveButton && originalText) {
+            saveButton.innerHTML = originalText;
+            saveButton.disabled = false;
+        }
+    });
+}
+
+function connectVpn(vpnId) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+    button.disabled = true;
+    
+    fetch(`/api/vpn/connect/${vpnId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'connecting') {
+            // Show connecting status and check status after a few seconds
+            setTimeout(() => {
+                checkVpnStatus(vpnId);
+            }, 3000);
+        } else {
+            alert('Error connecting VPN: ' + (data.message || 'Unknown error'));
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function disconnectVpn(vpnId) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Disconnecting...';
+    button.disabled = true;
+    
+    fetch(`/api/vpn/disconnect/${vpnId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error disconnecting VPN: ' + (data.message || 'Unknown error'));
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function checkVpnStatus(vpnId) {
+    fetch(`/api/vpn/status/${vpnId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Reload page to update UI with current status
+            location.reload();
+        } else {
+            console.log('VPN status check:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Error checking VPN status:', error);
+    });
+}
+
+function editVpn(vpnId) {
+    // Fetch VPN details and populate edit form
+    // This would open a modal similar to add VPN but with existing data
+    alert('Edit VPN functionality - to be implemented');
+}
+
+function deleteVpn(vpnId) {
+    if (confirm('Are you sure you want to delete this VPN connection?')) {
+        fetch(`/api/vpn/connections/${vpnId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error deleting VPN connection: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+// Update saveConnection function to include VPN data
+function saveConnection() {
+    const connectionData = {
+        name: document.getElementById('connectionName').value,
+        host: document.getElementById('connectionHost').value,
+        port: parseInt(document.getElementById('connectionPort').value),
+        username: document.getElementById('connectionUsername').value,
+        password: document.getElementById('connectionPassword').value,
+        api_key: document.getElementById('connectionApiKey').value,
+        vpn_connection_id: document.getElementById('connectionVpn').value || null,
+        auto_connect_vpn: document.getElementById('autoConnectVpn').checked
+    };
+    
+    fetch('/api/node-red/connections', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(connectionData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error creating connection: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+</script>
+{% endblock %}

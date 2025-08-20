@@ -1,0 +1,14 @@
+{
+  "name": "windsurf-admin-settings-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automated UI verification for Admin Settings tabs using Puppeteer",
+  "scripts": {
+    "test:admin-settings": "node tests/admin_settings_tabs.spec.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server-memory": "^2025.8.4",
+    "puppeteer": "^22.13.1",
+    "puppeteer-mcp-server": "^0.7.2"
+  }
+}

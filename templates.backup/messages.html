@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - Support System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-envelope"></i> Support Messages</h1>
+            
+            <!-- Filter buttons -->
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('messages', status='all') }}" 
+                   class="btn btn-{{ 'primary' if status_filter == 'all' else 'outline-primary' }}">
+                    All
+                </a>
+                <a href="{{ url_for('messages', status='open') }}" 
+                   class="btn btn-{{ 'warning' if status_filter == 'open' else 'outline-warning' }}">
+                    Open
+                </a>
+                <a href="{{ url_for('messages', status='in_progress') }}" 
+                   class="btn btn-{{ 'info' if status_filter == 'in_progress' else 'outline-info' }}">
+                    In Progress
+                </a>
+                <a href="{{ url_for('messages', status='resolved') }}" 
+                   class="btn btn-{{ 'success' if status_filter == 'resolved' else 'outline-success' }}">
+                    Resolved
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if messages.items %}
+                    <!-- Bulk Actions Toolbar -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                    <label for="select-all" class="form-check-label ms-1">Select All</label>
+                                </div>
+                                <div class="btn-group" role="group">
+                                    <button type="button" id="bulk-delete-btn" class="btn btn-sm btn-danger" disabled>
+                                        <i class="fas fa-trash"></i> Delete Selected
+                                    </button>
+                                    <button type="button" id="bulk-archive-btn" class="btn btn-sm btn-warning" disabled>
+                                        <i class="fas fa-archive"></i> Archive Selected
+                                    </button>
+                                    <button type="button" id="bulk-resolve-btn" class="btn btn-sm btn-success" disabled>
+                                        <i class="fas fa-check"></i> Mark Resolved
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span id="selected-count" class="text-muted small">0 messages selected</span>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="header-select-all" class="form-check-input">
+                                    </th>
+                                    <th>ID</th>
+                                    <th>From</th>
+                                    <th>Message</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Assigned To</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for message in messages.items %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input message-checkbox" 
+                                               value="{{ message.id }}" data-message-id="{{ message.id }}">
+                                    </td>
+                                    <td>#{{ message.id }}</td>
+                                    <td>
+                                        <strong>{{ message.telegram_first_name }} {{ message.telegram_last_name or '' }}</strong>
+                                        {% if message.telegram_username %}
+                                            <br><small class="text-muted">@{{ message.telegram_username }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="message-preview">
+                                            {{ message.message_text[:80] }}{% if message.message_text|length > 80 %}...{% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ 'open' if message.status == 'open' else 'progress' if message.status == 'in_progress' else 'resolved' }}">
+                                            {{ message.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="priority-indicator priority-{{ 'high' if message.priority in ['urgent', 'high'] else 'medium' if message.priority == 'normal' else 'low' }}"></span>
+                                            <span style="font-size: 0.875rem; font-weight: 500;">{{ message.priority.title() }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if message.assigned_to %}
+                                            <div class="d-flex align-items-center">
+                                                <div style="width: 25px; height: 25px; background: linear-gradient(135deg, #56ab2f, #a8e063); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
+                                                    <span style="color: white; font-size: 0.75rem; font-weight: bold;">{{ message.assigned_to.first_name[0]|upper }}</span>
+                                                </div>
+                                                <span style="font-size: 0.875rem;">{{ message.assigned_to.first_name }}</span>
+                                            </div>
+                                        {% else %}
+                                            <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.875rem;">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small style="color: rgba(255, 255, 255, 0.6);">{{ message.created_at.strftime('%b %d, %I:%M %p') }}</small>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('message_detail', message_id=message.id) }}" 
+                                           class="action-btn" style="padding: 0.3rem 0.6rem;">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Modern Pagination -->
+                    {% if messages.pages > 1 %}
+                    <nav aria-label="Message pagination" class="mt-4">
+                        <ul class="pagination justify-content-center" style="gap: 0.5rem;">
+                            {% if messages.has_prev %}
+                                <li>
+                                    <a class="action-btn" href="{{ url_for('messages', page=messages.prev_num, status=status_filter) }}" style="padding: 0.5rem 1rem;">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in messages.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != messages.page %}
+                                        <li>
+                                            <a class="action-btn" href="{{ url_for('messages', page=page_num, status=status_filter) }}" style="padding: 0.5rem 1rem;">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li>
+                                            <span class="action-btn" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color: white; border: none;">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li>
+                                        <span class="action-btn" style="padding: 0.5rem 1rem; opacity: 0.5; cursor: default;">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if messages.has_next %}
+                                <li>
+                                    <a class="action-btn" href="{{ url_for('messages', page=messages.next_num, status=status_filter) }}" style="padding: 0.5rem 1rem;">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5" style="color: rgba(255, 255, 255, 0.6);">
+                        <i class="fas fa-inbox fa-4x mb-3" style="opacity: 0.3;"></i>
+                        <h4 style="color: rgba(255, 255, 255, 0.8);">No messages found</h4>
+                        <p>No support messages match the current filter.</p>
+                    </div>
+                {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmationModalBody">
+                Are you sure you want to proceed with this action?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmationModalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Bulk Message Management JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const headerSelectAllCheckbox = document.getElementById('header-select-all');
+    const messageCheckboxes = document.querySelectorAll('.message-checkbox');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+    const bulkArchiveBtn = document.getElementById('bulk-archive-btn');
+    const bulkResolveBtn = document.getElementById('bulk-resolve-btn');
+    const selectedCountSpan = document.getElementById('selected-count');
+    
+    // Update button states and selected count
+    function updateBulkActions() {
+        const checkedBoxes = document.querySelectorAll('.message-checkbox:checked');
+        const selectedCount = checkedBoxes.length;
+        
+        selectedCountSpan.textContent = `${selectedCount} selected`;
+        
+        // Enable/disable bulk action buttons
+        const hasSelection = selectedCount > 0;
+        bulkDeleteBtn.disabled = !hasSelection;
+        bulkArchiveBtn.disabled = !hasSelection;
+        bulkResolveBtn.disabled = !hasSelection;
+        
+        // Update button styles when enabled/disabled
+        if (hasSelection) {
+            bulkDeleteBtn.style.opacity = '1';
+            bulkArchiveBtn.style.opacity = '1';
+            bulkResolveBtn.style.opacity = '1';
+        } else {
+            bulkDeleteBtn.style.opacity = '0.5';
+            bulkArchiveBtn.style.opacity = '0.5';
+            bulkResolveBtn.style.opacity = '0.5';
+        }
+        
+        // Update select all checkbox state
+        const allChecked = selectedCount === messageCheckboxes.length;
+        const someChecked = selectedCount > 0;
+        
+        selectAllCheckbox.checked = allChecked;
+        headerSelectAllCheckbox.checked = allChecked;
+        selectAllCheckbox.indeterminate = someChecked && !allChecked;
+        headerSelectAllCheckbox.indeterminate = someChecked && !allChecked;
+    }
+    
+    // Handle select all checkboxes
+    function handleSelectAll(checked) {
+        messageCheckboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+        updateBulkActions();
+    }
+    
+    // Event listeners
+    selectAllCheckbox.addEventListener('change', function() {
+        handleSelectAll(this.checked);
+    });
+    
+    headerSelectAllCheckbox.addEventListener('change', function() {
+        handleSelectAll(this.checked);
+        selectAllCheckbox.checked = this.checked;
+    });
+    
+    messageCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    // Show custom confirmation modal
+    function showConfirmationModal(title, message, type, confirmCallback) {
+        const modal = document.getElementById('confirmationModal');
+        const modalTitle = document.getElementById('confirmationModalLabel');
+        const modalBody = document.getElementById('confirmationModalBody');
+        const confirmBtn = document.getElementById('confirmationModalConfirm');
+        
+        // Set modal content
+        modalTitle.textContent = title;
+        modalBody.textContent = message;
+        
+        // Set button style based on type
+        confirmBtn.className = 'btn ';
+        switch(type) {
+            case 'danger':
+                confirmBtn.className += 'btn-danger';
+                break;
+            case 'warning':
+                confirmBtn.className += 'btn-warning';
+                break;
+            case 'success':
+                confirmBtn.className += 'btn-success';
+                break;
+            default:
+                confirmBtn.className += 'btn-primary';
+        }
+        
+        // Remove any existing event listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        // Add new event listener for this specific confirmation
+        newConfirmBtn.addEventListener('click', function() {
+            console.log('User confirmed action via custom modal');
+            // Hide modal
+            const bootstrapModal = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+            bootstrapModal.hide();
+            // Execute callback
+            confirmCallback();
+        });
+        
+        // Show modal
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        
+        console.log('Custom modal displayed:', title);
+    }
+    
+    // Perform bulk action via API (defined before event handlers)
+    function performBulkAction(action, messageIds) {
+        console.log('performBulkAction called with:', action, messageIds);
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('message_ids', JSON.stringify(messageIds));
+        
+        console.log('FormData prepared, making API call to /api/messages/bulk-action');
+        
+        fetch('/api/messages/bulk-action', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log('API response received:', response.status, response.statusText);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response data:', data);
+            if (data.success) {
+                console.log('Bulk action successful, showing success notification');
+                // Show success message
+                showNotification('success', data.message || `${action.charAt(0).toUpperCase() + action.slice(1)} completed successfully!`);
+                // Reload page to reflect changes
+                setTimeout(() => {
+                    console.log('Reloading page to reflect changes');
+                    window.location.reload();
+                }, 1500);
+            } else {
+                console.log('Bulk action failed:', data.message);
+                showNotification('error', data.message || 'An error occurred during the bulk action.');
+            }
+        })
+        .catch(error => {
+            console.error('API call error:', error);
+            showNotification('error', 'An error occurred. Please try again.');
+        });
+    }
+    
+    // Bulk action handlers
+    bulkDeleteBtn.addEventListener('click', function() {
+        console.log('Delete button clicked!');
+        const selectedIds = Array.from(document.querySelectorAll('.message-checkbox:checked')).map(cb => cb.value);
+        console.log('Selected IDs:', selectedIds);
+        if (selectedIds.length === 0) {
+            console.log('No messages selected, returning');
+            return;
+        }
+        
+        console.log('Showing custom confirmation dialog...');
+        showConfirmationModal(
+            'Delete Messages',
+            `Are you sure you want to delete ${selectedIds.length} message(s)? This action cannot be undone.`,
+            'danger',
+            () => {
+                console.log('User confirmed, performing bulk delete action');
+                performBulkAction('delete', selectedIds);
+            }
+        );
+    });
+    
+    bulkArchiveBtn.addEventListener('click', function() {
+        console.log('Archive button clicked!');
+        const selectedIds = Array.from(document.querySelectorAll('.message-checkbox:checked')).map(cb => cb.value);
+        console.log('Selected IDs for archive:', selectedIds);
+        if (selectedIds.length === 0) {
+            console.log('No messages selected for archive, returning');
+            return;
+        }
+        
+        console.log('Showing archive confirmation dialog...');
+        showConfirmationModal(
+            'Archive Messages',
+            `Are you sure you want to archive ${selectedIds.length} message(s)?`,
+            'warning',
+            () => {
+                console.log('User confirmed archive, performing bulk archive action');
+                performBulkAction('archive', selectedIds);
+            }
+        );
+    });
+    
+    bulkResolveBtn.addEventListener('click', function() {
+        console.log('Resolve button clicked!');
+        const selectedIds = Array.from(document.querySelectorAll('.message-checkbox:checked')).map(cb => cb.value);
+        console.log('Selected IDs for resolve:', selectedIds);
+        if (selectedIds.length === 0) {
+            console.log('No messages selected for resolve, returning');
+            return;
+        }
+        
+        console.log('Showing resolve confirmation dialog...');
+        showConfirmationModal(
+            'Mark as Resolved',
+            `Mark ${selectedIds.length} message(s) as resolved?`,
+            'success',
+            () => {
+                console.log('User confirmed resolve, performing bulk resolve action');
+                performBulkAction('resolve', selectedIds);
+            }
+        );
+    });
+    
+    // Show notification
+    function showNotification(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Insert at top of card body
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertAdjacentHTML('afterbegin', alertHtml);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const alert = cardBody.querySelector('.alert');
+            if (alert) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Initialize
+    updateBulkActions();
+});
+</script>
+{% endblock %}

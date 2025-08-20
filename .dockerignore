@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.swp
+.Python
+*.log
+.env
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Node (frontend static assets dev)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local databases outside instance (we use /app/instance in containers)
+support_system.db
+support_system.db-journal
+
+# Test artifacts
+/tests/screenshots/
+*.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .units-iframe-card .card-body { padding: 0; }
+  .units-iframe {
+    display: block;
+    width: 100%;
+    height: calc(100vh - 11rem);
+    min-height: 600px;
+    border: 0;
+    background: #fff;
+  }
+  @media (max-width: 991.98px) {
+    .units-iframe { height: calc(100vh - 12rem); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm units-iframe-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0"><i class="fas fa-industry me-2"></i> Units</h5>
+          <small class="text-muted">Embedded RevPAD devices</small>
+        </div>
+        <div class="card-body">
+          <iframe class="units-iframe" src="{{ url_for('units_proxy', urlpath='portal/devices') }}" title="Units Devices"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

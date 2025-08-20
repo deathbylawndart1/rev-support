@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Management - Support System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-calendar-alt"></i> On-Call Schedule Management</h1>
+        <p class="text-muted">Manage tech team on-call schedules and escalation order.</p>
+    </div>
+</div>
+
+<!-- Add Schedule Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus"></i> Add Schedule Slot</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_schedule') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.user_id.label(class="form-label") }}
+                            {{ form.user_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Days of Week <small class="text-muted">(select multiple)</small></label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        {{ form.monday(class="form-check-input") }}
+                                        {{ form.monday.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.tuesday(class="form-check-input") }}
+                                        {{ form.tuesday.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.wednesday(class="form-check-input") }}
+                                        {{ form.wednesday.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.thursday(class="form-check-input") }}
+                                        {{ form.thursday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        {{ form.friday(class="form-check-input") }}
+                                        {{ form.friday.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.saturday(class="form-check-input") }}
+                                        {{ form.saturday.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.sunday(class="form-check-input") }}
+                                        {{ form.sunday.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllDays()">
+                                            <i class="fas fa-check-double"></i> All
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="selectWeekdays()">
+                                            <i class="fas fa-briefcase"></i> Weekdays
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="clearDays()">
+                                            <i class="fas fa-times"></i> Clear
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control") }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ form.end_time.label(class="form-label") }}
+                            {{ form.end_time(class="form-control") }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">Options</label>
+                            <div class="form-check">
+                                {{ form.is_primary(class="form-check-input") }}
+                                {{ form.is_primary.label(class="form-check-label small") }}
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 mt-2">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Schedule -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week"></i> Current Schedule</h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Team Member</th>
+                                    <th>Time Slot</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                            {{ days[schedule.day_of_week] }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-circle fa-lg text-primary me-2"></i>
+                                            <div>
+                                                <strong>{{ schedule.user.first_name }} {{ schedule.user.last_name }}</strong>
+                                                <br><small class="text-muted">{{ schedule.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'primary' if schedule.is_primary else 'secondary' }}">
+                                            {{ 'Primary' if schedule.is_primary else 'Backup' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if schedule.is_active else 'danger' }}">
+                                            {{ 'Active' if schedule.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('delete_schedule', schedule_id=schedule.id) }}" style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                    onclick="return confirm('Are you sure you want to delete this schedule?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-calendar-times fa-4x mb-3"></i>
+                        <h4>No schedules configured</h4>
+                        <p>Add schedule slots above to set up on-call rotations.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Overview -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week"></i> Weekly Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                    {% for day_num in range(7) %}
+                    <div class="col-md-12 mb-3">
+                        <h6>{{ days[day_num] }}</h6>
+                        {% set day_schedules = schedules|selectattr('day_of_week', 'equalto', day_num)|list %}
+                        {% if day_schedules %}
+                            <div class="row">
+                                {% for schedule in day_schedules %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="card border-{{ 'primary' if schedule.is_primary else 'secondary' }}">
+                                        <div class="card-body p-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted">{{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}</small>
+                                                    <br><strong>{{ schedule.user.first_name }} {{ schedule.user.last_name }}</strong>
+                                                </div>
+                                                <span class="badge bg-{{ 'primary' if schedule.is_primary else 'secondary' }}">
+                                                    {{ 'P' if schedule.is_primary else 'B' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted">
+                                <small><i class="fas fa-minus"></i> No coverage</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> How It Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user-clock"></i> On-Call System</h6>
+                        <ul>
+                            <li><strong>Primary:</strong> First person notified for new support requests</li>
+                            <li><strong>Backup:</strong> Notified if primary doesn't respond within timeout</li>
+                            <li><strong>Escalation:</strong> Automatic escalation through backup team members</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-bell"></i> Notification Flow</h6>
+                        <ol>
+                            <li>Support request received via Telegram bot</li>
+                            <li>System identifies current on-call person</li>
+                            <li>Primary on-call person notified via Telegram</li>
+                            <li>If no response in 15 minutes, backup is notified</li>
+                            <li>Process continues until someone responds</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectAllDays() {
+    // Select all day checkboxes
+    document.getElementById('monday').checked = true;
+    document.getElementById('tuesday').checked = true;
+    document.getElementById('wednesday').checked = true;
+    document.getElementById('thursday').checked = true;
+    document.getElementById('friday').checked = true;
+    document.getElementById('saturday').checked = true;
+    document.getElementById('sunday').checked = true;
+}
+
+function selectWeekdays() {
+    // Clear all first
+    clearDays();
+    // Select only weekdays (Monday-Friday)
+    document.getElementById('monday').checked = true;
+    document.getElementById('tuesday').checked = true;
+    document.getElementById('wednesday').checked = true;
+    document.getElementById('thursday').checked = true;
+    document.getElementById('friday').checked = true;
+}
+
+function clearDays() {
+    // Clear all day checkboxes
+    document.getElementById('monday').checked = false;
+    document.getElementById('tuesday').checked = false;
+    document.getElementById('wednesday').checked = false;
+    document.getElementById('thursday').checked = false;
+    document.getElementById('friday').checked = false;
+    document.getElementById('saturday').checked = false;
+    document.getElementById('sunday').checked = false;
+}
+
+// Add visual feedback for form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const dayCheckboxes = [
+                'monday', 'tuesday', 'wednesday', 'thursday',
+                'friday', 'saturday', 'sunday'
+            ];
+            
+            const anyDaySelected = dayCheckboxes.some(day => 
+                document.getElementById(day).checked
+            );
+            
+            if (!anyDaySelected) {
+                e.preventDefault();
+                alert('Please select at least one day of the week.');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

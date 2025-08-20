@@ -1,0 +1,2322 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings - Support Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cogs"></i> Admin Settings</h2>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary" onclick="previewChanges()">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="resetToDefaults()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </div>
+            <!-- Settings Tabs -->
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'general' else '' }}" href="{{ url_for('admin_settings', tab='general') }}">
+                        <i class="fas fa-sliders-h me-1"></i> General
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'ai-integration' else '' }}" href="{{ url_for('admin_settings', tab='ai-integration') }}">
+                        <i class="fas fa-robot me-1"></i> AI Integration
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'telegram-groups' else '' }}" href="{{ url_for('admin_settings', tab='telegram-groups') }}">
+                        <i class="fas fa-users-cog me-1"></i> Telegram Groups
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'ai-knowledge' else '' }}" href="{{ url_for('admin_settings', tab='ai-knowledge') }}">
+                        <i class="fas fa-brain me-1"></i> AI Knowledge Base
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'ai-analytics' else '' }}" href="{{ url_for('admin_settings', tab='ai-analytics') }}">
+                        <i class="fas fa-chart-line me-1"></i> AI Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'templates' else '' }}" href="{{ url_for('admin_settings', tab='templates') }}">
+                        <i class="fas fa-file-alt me-1"></i> Templates
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'users' else '' }}" href="{{ url_for('admin_settings', tab='users') }}">
+                        <i class="fas fa-user-shield me-1"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'escalation' else '' }}" href="{{ url_for('admin_settings', tab='escalation') }}">
+                        <i class="fas fa-sitemap me-1"></i> Escalation Rules
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_tab == 'node-red' else '' }}" href="{{ url_for('admin_settings', tab='node-red') }}">
+                        <i class="fas fa-project-diagram me-1"></i> Node-RED
+                    </a>
+                </li>
+            </ul>
+
+
+
+            <!-- General Tab -->
+            <div id="tab-general" class="{{ 'd-block' if active_tab == 'general' else 'd-none' }}">
+            <div class="row">
+                <!-- Settings Form -->
+                <div class="col-lg-8">
+                    <form method="POST" enctype="multipart/form-data" id="settingsForm">
+                        {{ form.hidden_tag() }}
+                        <input type="hidden" name="form_section" value="general">
+                        <!-- Branding Section -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-palette"></i> Branding & Identity
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="company_name" class="form-label">Company/System Name</label>
+                                            <input type="text" class="form-control" id="company_name" name="company_name" value="{{ appearance.company_name }}" placeholder="Support System">
+                                            <div class="form-text">Appears in the navigation and page titles</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="logo" class="form-label">Logo Upload</label>
+                                            <input type="file" class="form-control" id="logo" name="logo" 
+                                                   accept="image/*" onchange="previewLogo(this)">
+                                            <div class="form-text">Recommended: PNG/SVG, max 200px height</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="favicon" class="form-label">Favicon Upload</label>
+                                            <input type="file" class="form-control" id="favicon" name="favicon" 
+                                                   accept="image/*">
+                                            <div class="form-text">Recommended: ICO/PNG, 32x32px</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if appearance.logo_filename %}
+                                        <div class="mb-3">
+                                            <label class="form-label">Current Logo</label>
+                                            <div class="border p-2 rounded bg-light">
+                                                <img src="{{ url_for('static', filename='uploads/' + appearance.logo_filename) }}" 
+                                                     alt="Current Logo" style="max-height: 50px;" id="currentLogo">
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Logo Sizing Controls -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="logo_max_height" class="form-label">Logo Max Height</label>
+                                            {{ form.logo_max_height(class="form-control", id="logo_max_height") }}
+                                            <div class="form-text">Maximum height for logo on login page</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="logo_max_width" class="form-label">Logo Max Width</label>
+                                            {{ form.logo_max_width(class="form-control", id="logo_max_width") }}
+                                            <div class="form-text">Maximum width for logo on login page</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Color Scheme Section -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-paint-brush"></i> Color Scheme
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="color_scheme" class="form-label">Predefined Color Schemes</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select class="form-control" id="color_scheme" name="color_scheme" onchange="toggleCustomColors()">
+                                                <option value="blue" {{ 'selected' if appearance.color_scheme == 'blue' else '' }}>Professional Blue</option>
+                                                <option value="green" {{ 'selected' if appearance.color_scheme == 'green' else '' }}>Nature Green</option>
+                                                <option value="purple" {{ 'selected' if appearance.color_scheme == 'purple' else '' }}>Royal Purple</option>
+                                                <option value="red" {{ 'selected' if appearance.color_scheme == 'red' else '' }}>Corporate Red</option>
+                                                <option value="dark" {{ 'selected' if appearance.color_scheme == 'dark' else '' }}>Dark Mode</option>
+                                                <option value="custom" {{ 'selected' if appearance.color_scheme == 'custom' else '' }}>Custom Colors</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="color-preview-grid" id="colorPreview">
+                                                <!-- Color preview squares will be populated by JavaScript -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Color Pickers -->
+                                <div id="customColorSection" class="{{ 'd-block' if appearance.color_scheme == 'custom' else 'd-none' }}">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="primary_color" class="form-label">Primary Color</label>
+                                                <input type="color" class="form-control form-control-color" 
+                                                       id="primary_color" name="primary_color" 
+                                                       value="{{ appearance.primary_color }}" 
+                                                       title="Choose primary color">
+                                                <div class="form-text">Main buttons and links</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="secondary_color" class="form-label">Secondary Color</label>
+                                                <input type="color" class="form-control form-control-color" 
+                                                       id="secondary_color" name="secondary_color" 
+                                                       value="{{ appearance.secondary_color }}" 
+                                                       title="Choose secondary color">
+                                                <div class="form-text">Text and borders</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="accent_color" class="form-label">Accent Color</label>
+                                                <input type="color" class="form-control form-control-color" 
+                                                       id="accent_color" name="accent_color" 
+                                                       value="{{ appearance.accent_color }}" 
+                                                       title="Choose accent color">
+                                                <div class="form-text">Success states and highlights</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Customization -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-code"></i> Advanced Customization
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="custom_css" class="form-label">Custom CSS</label>
+                                    <textarea class="form-control" id="custom_css" name="custom_css" rows="8" 
+                                              placeholder="/* Add your custom CSS here */&#10;.navbar-brand {&#10;  font-weight: bold;&#10;}">{{ appearance.custom_css or '' }}</textarea>
+                                    <div class="form-text">
+                                        <i class="fas fa-warning text-warning"></i>
+                                        Advanced users only. Invalid CSS may break the dashboard appearance.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Integration moved to its own tab below -->
+
+                        <!-- Save Button -->
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Preview Panel -->
+                <div class="col-lg-4">
+                    <div class="card sticky-top preview-sticky">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-eye"></i> Live Preview
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="preview-container" id="previewContainer">
+                                <!-- Mini dashboard preview -->
+                                <div class="mini-navbar" id="previewNavbar">
+                                    <div class="mini-logo" id="previewLogo">
+                                        {% if appearance.logo_filename %}
+                                            <img src="{{ url_for('static', filename='uploads/' + appearance.logo_filename) }}" 
+                                                 alt="Logo" style="height: 20px;">
+                                        {% endif %}
+                                        <span id="previewCompanyName">{{ appearance.company_name }}</span>
+                                    </div>
+                                </div>
+                                <div class="mini-content" id="previewContent">
+                                    <div class="mini-card" id="previewCard">
+                                        <div class="mini-card-header">Dashboard Preview</div>
+                                        <div class="mini-card-body">
+                                            <div class="mini-button primary" id="previewPrimaryBtn">Primary Button</div>
+                                            <div class="mini-button secondary" id="previewSecondaryBtn">Secondary</div>
+                                            <div class="mini-button accent" id="previewAccentBtn">Success</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Scheme Info -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle"></i> Tips
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-lightbulb text-warning"></i>
+                                    <strong>Logo:</strong> Upload PNG or SVG for best quality
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-palette text-info"></i>
+                                    <strong>Colors:</strong> Choose colors that provide good contrast
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-mobile-alt text-success"></i>
+                                    <strong>Responsive:</strong> Changes apply to all screen sizes
+                                </li>
+                                <li>
+                                    <i class="fas fa-undo text-secondary"></i>
+                                    <strong>Reset:</strong> Use reset button to restore defaults
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- Close tab-general -->
+        <!-- End of General Tab -->
+
+        <!-- AI Knowledge Base Tab -->
+        <div id="tab-ai-knowledge" class="{{ 'd-block' if active_tab == 'ai-knowledge' else 'd-none' }}">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-brain me-2"></i>AI Knowledge Base</h2>
+                <a href="{{ url_for('add_knowledge') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Knowledge Entry
+                </a>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Entries</h6>
+                                    <h3>{{ knowledge_entries|length }}</h3>
+                                </div>
+                                <i class="fas fa-database fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Active Entries</h6>
+                                    <h3>{{ knowledge_entries|selectattr('is_active')|list|length }}</h3>
+                                </div>
+                                <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Categories</h6>
+                                    <h3>{{ knowledge_entries|groupby('category')|list|length }}</h3>
+                                </div>
+                                <i class="fas fa-tags fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Avg Usage</h6>
+                                    <h3>{{ "%.1f"|format((knowledge_entries|sum(attribute='usage_count') / knowledge_entries|length) if knowledge_entries else 0) }}</h3>
+                                </div>
+                                <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Knowledge Base Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Knowledge Base Entries</h5>
+                </div>
+                <div class="card-body">
+                    {% if knowledge_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Confidence</th>
+                                    <th>Usage Count</th>
+                                    <th>Success Rate</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in knowledge_entries %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ entry.title }}</strong><br>
+                                        <small class="text-muted">{{ entry.question_pattern[:100] }}{% if entry.question_pattern|length > 100 %}...{% endif %}</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ entry.category.replace('_', ' ').title() }}</span></td>
+                                    <td>{{ "%.0f"|format(entry.confidence_threshold * 100) }}%</td>
+                                    <td><span class="badge bg-info">{{ entry.usage_count }}</span></td>
+                                    <td>
+                                        {% if entry.usage_count > 0 %}
+                                            {% set success_color = 'success' if entry.success_rate >= 0.7 else 'warning' if entry.success_rate >= 0.5 else 'danger' %}
+                                            <span class="badge bg-{{ success_color }}">{{ "%.0f"|format(entry.success_rate * 100) }}%</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ entry.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('edit_knowledge', id=entry.id) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i></a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm kb-delete-btn" data-entry-id="{{ entry.id }}" data-entry-title="{{ entry.title }}"><i class="fas fa-trash"></i></button>
+                                          </div>
+                                      </td>
+                                  </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-brain fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Knowledge Base Entries</h5>
+                        <p class="text-muted">Start building your AI support system by adding knowledge entries.</p>
+                        <a href="{{ url_for('add_knowledge') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add First Entry</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        <!-- Delete Confirmation Modal (Knowledge Base) -->
+        <div class="modal fade" id="kbDeleteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the knowledge entry "<span id="deleteEntryTitle"></span>"?</p>
+                        <p class="text-danger"><small>This action cannot be undone.</small></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form id="deleteForm" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Close AI Knowledge tab container -->
+        </div>
+
+        <!-- AI Analytics Tab -->
+        <div id="tab-ai-analytics" class="{{ 'd-block' if active_tab == 'ai-analytics' else 'd-none' }}">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="fas fa-chart-bar"></i> AI Support Analytics</h2>
+                    <p class="text-muted">Analytics and insights for AI-powered support features</p>
+                </div>
+            </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white"><div class="card-body"><div class="d-flex justify-content-between"><div><h4>{{ total_analyses }}</h4><p>Total Analyses</p></div><div class="align-self-center"><i class="fas fa-brain fa-2x"></i></div></div></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white"><div class="card-body"><div class="d-flex justify-content-between"><div><h4>{{ total_auto_responses }}</h4><p>Auto Responses</p></div><div class="align-self-center"><i class="fas fa-robot fa-2x"></i></div></div></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white"><div class="card-body"><div class="d-flex justify-content-between"><div><h4>{{ active_sessions }}</h4><p>Active Sessions</p></div><div class="align-self-center"><i class="fas fa-comments fa-2x"></i></div></div></div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white"><div class="card-body"><div class="d-flex justify-content-between"><div><h4>{{ kb_performance|length }}</h4><p>KB Entries</p></div><div class="align-self-center"><i class="fas fa-database fa-2x"></i></div></div></div></div>
+        </div>
+    </div>
+
+    <!-- Charts and Analytics -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h5><i class="fas fa-chart-pie"></i> Category Distribution</h5></div>
+                <div class="card-body">
+                                {% if category_stats %}
+                                    {% set ns = namespace(total=0) %}
+                                    {% for category, count in category_stats %}
+                                        {% set ns.total = ns.total + count %}
+                                    {% endfor %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead><tr><th>Category</th><th>Count</th><th>Percentage</th></tr></thead>
+                                            <tbody>
+                                                {% for category, count in category_stats %}
+                                                <tr>
+                                                    <td>{{ category or 'Uncategorized' }}</td>
+                                                    <td>{{ count }}</td>
+                                                    <td>{% if ns.total > 0 %}{{ "%.1f"|format((count / ns.total) * 100) }}%{% else %}0%{% endif %}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">No category data available yet.</p>
+                                {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h5><i class="fas fa-trophy"></i> Top Knowledge Base Entries</h5></div>
+                <div class="card-body">
+                    {% if kb_performance %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead><tr><th>Title</th><th>Usage</th><th>Success Rate</th></tr></thead>
+                                <tbody>
+                                    {% for entry in kb_performance %}
+                                    <tr>
+                                        <td>{{ entry.title[:50] }}{% if entry.title|length > 50 %}...{% endif %}</td>
+                                        <td>{{ entry.usage_count }}</td>
+                                        <td>
+                                            {% if entry.success_rate %}
+                                                <span class="badge bg-{% if entry.success_rate >= 80 %}success{% elif entry.success_rate >= 60 %}warning{% else %}danger{% endif %}">{{ "%.1f"|format(entry.success_rate) }}%</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No knowledge base performance data available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>AI Analytics:</strong> This dashboard provides insights into AI-powered support features including message analysis, auto-responses, and knowledge base performance. Data is updated in real-time as the AI processes support requests.
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- AI Integration Tab -->
+        <div id="tab-ai-integration" class="{{ 'd-block' if active_tab == 'ai-integration' else 'd-none' }}">
+  <div class="row">
+    <div class="col-lg-8">
+      <form method="POST" id="aiIntegrationForm">
+        <input type="hidden" name="form_section" value="ai-integration">
+        <!-- Temporarily removed form fields to test rendering -->
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-robot me-2"></i>AI Integration</h5>
+          </div>
+          <div class="card-body">
+            <div class="form-check form-switch mb-3">
+              {{ form.ai_is_enabled(class="form-check-input", id="ai_is_enabled") }}
+              <label class="form-check-label" for="ai_is_enabled">Enable AI Auto Support</label>
+            </div>
+
+            <div class="mb-3">
+              <label for="ai_provider" class="form-label">Provider</label>
+              {{ form.ai_provider(class="form-select", id="ai_provider") }}
+            </div>
+
+            <div class="mb-3" id="ai_base_url_group" style="display:none;">
+              <label for="ai_base_url" class="form-label">Base URL</label>
+              {{ form.ai_base_url(class="form-control", id="ai_base_url") }}
+              <div class="form-text">Required for Azure OpenAI, Ollama, or Custom providers.</div>
+            </div>
+
+            <div class="mb-3" id="ai_org_group" style="display:none;">
+              <label for="ai_organization" class="form-label">Organization (OpenAI)</label>
+              {{ form.ai_organization(class="form-control", id="ai_organization") }}
+            </div>
+
+            <div class="mb-3">
+              <label for="ai_api_key" class="form-label">API Key</label>
+              {{ form.ai_api_key(class="form-control", id="ai_api_key") }}
+              <div class="form-text">Leave blank to keep the existing key.</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="ai_model" class="form-label">Model</label>
+              <div class="input-group">
+                {{ form.ai_model(class="form-control", id="ai_model") }}
+                <button type="button" class="btn btn-outline-secondary" id="loadModelsBtn">
+                  <i class="fas fa-sync"></i> Load Models
+                </button>
+              </div>
+              <small id="ai_models_status" class="text-muted d-block mt-1"></small>
+              <select id="ai_model_select" class="form-select mt-2" style="display:none;"></select>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="ai_temperature" class="form-label">Temperature</label>
+                  {{ form.ai_temperature(class="form-select", id="ai_temperature") }}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="ai_top_p" class="form-label">Top P</label>
+                  {{ form.ai_top_p(class="form-select", id="ai_top_p") }}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="ai_max_tokens" class="form-label">Max Tokens</label>
+                  {{ form.ai_max_tokens(class="form-control", id="ai_max_tokens") }}
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="ai_system_prompt" class="form-label">System Prompt</label>
+              {{ form.ai_system_prompt(class="form-control", id="ai_system_prompt") }}
+            </div>
+
+            <div class="card mt-4">
+              <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-hand-paper me-2"></i>Auto-Acknowledgement</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="ack_text" class="form-label">Acknowledgement Text</label>
+                  {{ form.ack_text(class="form-control", id="ack_text") }}
+                </div>
+                <div class="mb-3">
+                  <label for="ack_interval_minutes" class="form-label">Min Interval (minutes)</label>
+                  {{ form.ack_interval_minutes(class="form-select", id="ack_interval_minutes") }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save AI Settings</button>
+          <a href="{{ url_for('admin_settings', tab='ai-integration') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+    <div class="col-lg-4">
+      <div class="alert alert-info mt-2">
+        <i class="fas fa-info-circle"></i>
+        Use "Load Models" to fetch available models from the selected provider.
+      </div>
+    </div>
+  </div>
+  
+        </div>
+
+        <!-- Telegram Groups Tab -->
+        <div id="tab-telegram-groups" class="{{ 'd-block' if active_tab == 'telegram-groups' else 'd-none' }}">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="fas fa-users-cog me-2"></i>Telegram Groups</h2>
+    <button id="btnAddGroup" type="button" class="btn btn-primary">
+      <i class="fas fa-plus me-1"></i> Add Group
+    </button>
+  </div>
+
+  <div id="groupsAlert" class="alert d-none"></div>
+
+  <!-- Support Request Routing Configuration -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-route me-2"></i>Notification Groups Configuration</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" id="supportRoutingForm">
+        <input type="hidden" name="form_section" value="support-routing">
+        
+        <!-- Support Request Notifications -->
+        <h6 class="mb-3"><i class="fas fa-ticket-alt me-2"></i>Support Request Notifications</h6>
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="support_group_id" class="form-label">
+                <i class="fas fa-bell me-1"></i>New Support Request Group ID
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     id="support_group_id" 
+                     name="support_group_id" 
+                     value="{{ support_group_id }}"
+                     placeholder="e.g., -1001234567890">
+              <small class="form-text text-muted">
+                Group that receives notifications when new support requests are created
+              </small>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              <input class="form-check-input" 
+                     type="checkbox" 
+                     id="forward_support_to_group" 
+                     name="forward_to_group"
+                     {% if forward_to_group %}checked{% endif %}>
+              <label class="form-check-label" for="forward_support_to_group">
+                <i class="fas fa-share me-1"></i>Enable support request notifications
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Escalation Notifications -->
+        <h6 class="mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Escalation Notifications</h6>
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="escalation_group_id" class="form-label">
+                <i class="fas fa-clock me-1"></i>Escalation Alert Group ID
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     id="escalation_group_id" 
+                     name="escalation_group_id" 
+                     value="{{ escalation_group_id | default(support_group_id, true) }}"
+                     placeholder="e.g., -1001234567890">
+              <small class="form-text text-muted">
+                Group that receives alerts when support requests need escalation
+              </small>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              <input class="form-check-input" 
+                     type="checkbox" 
+                     id="enable_escalation" 
+                     name="enable_escalation"
+                     {% if enable_escalation %}checked{% endif %}>
+              <label class="form-check-label" for="enable_escalation">
+                <i class="fas fa-bell-slash me-1"></i>Enable escalation alerts
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tech Team Notifications -->
+        <h6 class="mb-3"><i class="fas fa-users me-2"></i>Tech Team Notifications</h6>
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="tech_team_group_id" class="form-label">
+                <i class="fas fa-user-tie me-1"></i>Tech Team Group ID
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     id="tech_team_group_id" 
+                     name="tech_team_group_id" 
+                     value="{{ tech_team_group_id | default('', true) }}"
+                     placeholder="e.g., -1001234567890">
+              <small class="form-text text-muted">
+                Group for internal tech team communications and shift notifications
+              </small>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              <input class="form-check-input" 
+                     type="checkbox" 
+                     id="enable_tech_notifications" 
+                     name="enable_tech_notifications"
+                     {% if enable_tech_notifications %}checked{% endif %}>
+              <label class="form-check-label" for="enable_tech_notifications">
+                <i class="fas fa-users-cog me-1"></i>Enable tech team notifications
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Configuration Summary -->
+        <div class="alert alert-info">
+          <h6 class="alert-heading"><i class="fas fa-info-circle me-1"></i>Current Configuration</h6>
+          <div class="row mt-2">
+            <div class="col-md-4">
+              <strong>Support Requests:</strong><br>
+              <code>{{ support_group_id or 'Not configured' }}</code>
+              {% if forward_to_group %}<span class="badge bg-success ms-2">Active</span>{% else %}<span class="badge bg-secondary ms-2">Disabled</span>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <strong>Escalations:</strong><br>
+              <code>{{ escalation_group_id | default(support_group_id, true) or 'Not configured' }}</code>
+              {% if enable_escalation %}<span class="badge bg-success ms-2">Active</span>{% else %}<span class="badge bg-secondary ms-2">Disabled</span>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <strong>Tech Team:</strong><br>
+              <code>{{ tech_team_group_id or 'Not configured' }}</code>
+              {% if enable_tech_notifications %}<span class="badge bg-success ms-2">Active</span>{% else %}<span class="badge bg-secondary ms-2">Disabled</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="col-12">
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="forward_to_group" name="forward_to_group" 
+                     {% if forward_to_group %}checked{% endif %}>
+              <label class="form-check-label" for="forward_to_group">
+                <i class="fas fa-share me-1"></i>Enable forwarding support requests to selected group
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i>Save Routing Configuration
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if telegram_groups %}
+      <div class="table-responsive">
+        <table class="table table-striped" id="groupsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Group ID</th>
+              <th>Description</th>
+              <th>Active</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for group in telegram_groups %}
+            <tr>
+              <td>{{ group.name }}</td>
+              <td><code>{{ group.telegram_group_id }}</code></td>
+              <td>{{ group.description if group.description else 'No description' }}</td>
+              <td>
+                {% if group.is_active %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td>{{ group.created_at.strftime('%Y-%m-%d') if group.created_at else 'Unknown' }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" data-group-id="{{ group.id }}" onclick="editGroup(this)" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" data-group-id="{{ group.id }}" onclick="deleteGroup(this)" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-1"></i>
+        No Telegram groups configured. Click "Add Group" to connect your first Telegram group.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Add/Edit Group Modal -->
+  <div class="modal fade" id="groupModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="groupModalTitle">Add Group</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="groupName" class="form-label">Name</label>
+            <input type="text" id="groupName" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="groupId" class="form-label">Telegram Group ID</label>
+            <input type="text" id="groupId" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="groupDesc" class="form-label">Description</label>
+            <textarea id="groupDesc" class="form-control"></textarea>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="groupActive" checked>
+            <label class="form-check-label" for="groupActive">Active</label>
+          </div>
+          <div class="form-check form-switch" id="addSavedUsersDiv">
+            <input class="form-check-input" type="checkbox" id="addSavedUsers">
+            <label class="form-check-label" for="addSavedUsers">
+              Add saved Telegram users to this group
+              <small class="text-muted d-block">The bot will attempt to add all saved user IDs to this group</small>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" id="saveGroupBtn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="tgDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Delete</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this group?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger" id="confirmDeleteGroupBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+
+        <!-- Templates Tab -->
+        <div id="tab-templates" class="{{ 'd-block' if active_tab == 'templates' else 'd-none' }}">
+  <div class="row">
+    <div class="col-12">
+      <h2><i class="fas fa-file-alt me-2"></i>Response Templates</h2>
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Manage Response Templates</h5>
+          <a href="{{ url_for('response_templates') }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i>Add Template
+          </a>
+        </div>
+        <div class="card-body">
+          {% if templates %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Template Name</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Usage Count</th>
+                  <th>Last Modified</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for template in templates %}
+                <tr>
+                  <td>{{ template.name }}</td>
+                  <td>
+                    {% if template.category == 'greeting' %}
+                      <span class="badge bg-success">Greeting</span>
+                    {% elif template.category == 'troubleshooting' %}
+                      <span class="badge bg-warning">Troubleshooting</span>
+                    {% elif template.category == 'escalation' %}
+                      <span class="badge bg-danger">Escalation</span>
+                    {% elif template.category == 'general' %}
+                      <span class="badge bg-info">General</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ template.category|title }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if template.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ template.usage_count if template.usage_count else 0 }}</td>
+                  <td>
+                    {% if template.updated_at %}
+                      {{ template.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% else %}
+                      {{ template.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('response_templates') }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger" data-template-id="{{ template.id }}" onclick="deleteTemplate(this)" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-1"></i>
+            No response templates found. <a href="{{ url_for('response_templates') }}">Create your first template</a>.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="tab-users" class="{{ 'd-block' if active_tab == 'users' else 'd-none' }}">
+  <div class="row">
+    <div class="col-12">
+      <h2><i class="fas fa-user-shield me-2"></i>User Management</h2>
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Support Team Members</h5>
+          <a href="{{ url_for('users') }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-user-plus me-1"></i>Add User
+          </a>
+        </div>
+        <div class="card-body">
+          {% if users %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Last Login</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      {% set initials = (user.first_name[:1] if user.first_name else user.username[:1]).upper() + (user.last_name[:1] if user.last_name else user.username[1:2] if len(user.username) > 1 else '').upper() %}
+                      <div class="avatar-sm {{ 'bg-danger' if user.is_admin else 'bg-primary' }} text-white rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        {{ initials }}
+                      </div>
+                      <div>
+                        <div>{{ user.first_name }} {{ user.last_name if user.last_name else '' }}</div>
+                        <small class="text-muted">{{ user.email }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {% if user.is_admin %}
+                      <span class="badge bg-danger">Admin</span>
+                    {% else %}
+                      <span class="badge bg-primary">Technician</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ user.department if user.department else 'Not Specified' }}</td>
+                  <td>
+                    {% if user.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if user.last_login %}
+                      {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                    {% else %}
+                      Never
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger" data-user-id="{{ user.id }}" data-username="{{ user.username }}" onclick="confirmDeleteUser(this)" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-1"></i>
+            No users found. <a href="{{ url_for('users') }}">Add your first user</a>.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Add Users to Telegram Group Section -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Add Users to Telegram Group</h5>
+          <small class="text-muted">Add saved user IDs to an existing Telegram group</small>
+        </div>
+        <div class="card-body">
+          <form id="add-users-to-group-form">
+            <div class="mb-3">
+              <label for="target-group-id" class="form-label">Telegram Group ID <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="target-group-id" placeholder="e.g., -1001234567890" required>
+              <small class="form-text text-muted">Enter the Telegram group ID where users will be added</small>
+            </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-1"></i>
+              <strong>Note:</strong> The bot must be an admin in the target group to add users. Users must have previously interacted with the bot to be added.
+            </div>
+            <button type="submit" class="btn btn-primary" id="add-users-btn">
+              <i class="fas fa-user-plus me-1"></i>Add Saved Users to Group
+            </button>
+            <div id="add-users-result" class="mt-3"></div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Telegram Group Members Section -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fab fa-telegram me-2"></i>Default Telegram Group Members</h5>
+          <small class="text-muted">User IDs to automatically add to newly created support groups</small>
+        </div>
+        <div class="card-body">
+          <!-- Display saved users -->
+          <div class="mb-4" id="saved-users-display">
+            <h6 class="mb-3">Saved Users</h6>
+            <div id="saved-users-list" class="list-group">
+              <!-- Saved users will be displayed here -->
+            </div>
+            <p class="text-muted mt-2" id="no-users-message" style="display: none;">No users saved yet.</p>
+          </div>
+          
+          <form id="telegram-users-form" method="POST" action="{{ url_for('admin_settings') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_section" value="telegram-users">
+            
+            <div id="telegram-users-container">
+              <div class="mb-3">
+                <label class="form-label">Add/Edit Telegram Users</label>
+                <small class="text-muted d-block mb-2">Enter user IDs with descriptive names</small>
+                
+                <div id="user-ids-list">
+                  <!-- User ID inputs will be added here -->
+                </div>
+                
+                <!-- Hidden element with existing user IDs for JavaScript -->
+                <div id="telegram-users-data" data-user-ids='{{ telegram_user_ids | tojson }}' style="display: none;"></div>
+                
+                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addUserIdField()">
+                  <i class="fas fa-plus me-1"></i>Add User
+                </button>
+              </div>
+            </div>
+            
+            <div class="mt-3">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>Save Telegram Users
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+
+        <!-- Escalation Tab -->
+        <div id="tab-escalation" class="{{ 'd-block' if active_tab == 'escalation' else 'd-none' }}">
+  <div class="row">
+    <div class="col-12">
+      <h2><i class="fas fa-sitemap me-2"></i>Escalation Rules</h2>
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Automated Escalation Rules</h5>
+          <a href="{{ url_for('escalation_rules') }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i>Add Rule
+          </a>
+        </div>
+        <div class="card-body">
+          {% if escalation_rules %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Rule Name</th>
+                  <th>Priority</th>
+                  <th>Keywords</th>
+                  <th>Response Time</th>
+                  <th>Notify Channels</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for rule in escalation_rules %}
+                <tr>
+                  <td>{{ rule.name }}</td>
+                  <td>
+                    {% if rule.priority|int >= 8 %}
+                      <span class="badge bg-danger">High ({{ rule.priority }})</span>
+                    {% elif rule.priority|int >= 5 %}
+                      <span class="badge bg-warning">Medium ({{ rule.priority }})</span>
+                    {% else %}
+                      <span class="badge bg-info">Low ({{ rule.priority }})</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if rule.keywords %}
+                      <small>{{ rule.keywords[:50] }}{% if rule.keywords|length > 50 %}...{% endif %}</small>
+                    {% else %}
+                      <small class="text-muted">No keywords</small>
+                    {% endif %}
+                  </td>
+                  <td>{{ rule.response_time_minutes if rule.response_time_minutes else 'N/A' }} min</td>
+                  <td>
+                    {% if rule.notify_channels %}
+                      {% for channel in rule.notify_channels.split(',')[:2] %}
+                        <span class="badge bg-secondary">{{ channel.strip() }}</span>
+                      {% endfor %}
+                      {% if rule.notify_channels.split(',')|length > 2 %}
+                        <small>+{{ rule.notify_channels.split(',')|length - 2 }}</small>
+                      {% endif %}
+                    {% else %}
+                      <small class="text-muted">None</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if rule.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('escalation_rules') }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger" data-rule-id="{{ rule.id }}" onclick="deleteEscalationRule(this)" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-1"></i>
+            No escalation rules configured. <a href="{{ url_for('escalation_rules') }}">Create your first rule</a>.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+
+        <!-- Node-RED Tab -->
+        <div id="tab-node-red" class="{{ 'd-block' if active_tab == 'node-red' else 'd-none' }}">
+  <div class="row">
+    <div class="col-12">
+      <h2><i class="fas fa-project-diagram me-2"></i>Node-RED Dashboard</h2>
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Workflow Automation</h5>
+        </div>
+        <div class="card-body">
+          {% if node_red_connection %}
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="node-red-url">Node-RED Instance URL</label>
+                <input type="text" class="form-control" id="node-red-url" value="{{ node_red_connection.url if node_red_connection else '' }}" placeholder="http://localhost:1880">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="node-red-status">Connection Status</label>
+                <div class="mt-2">
+                  {% if node_red_connection.is_connected %}
+                    <span class="badge bg-success">Connected</span>
+                  {% else %}
+                    <span class="badge bg-danger">Disconnected</span>
+                  {% endif %}
+                  <button class="btn btn-sm btn-outline-primary ms-2" onclick="testNodeRedConnection()">
+                    <i class="fas fa-plug"></i> Test Connection
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {% if node_red_widgets %}
+          <h6>Active Widgets</h6>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Widget Name</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for widget in node_red_widgets %}
+                <tr>
+                  <td>{{ widget.name }}</td>
+                  <td><span class="badge bg-info">{{ widget.widget_type }}</span></td>
+                  <td>
+                    {% if widget.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ widget.updated_at.strftime('%Y-%m-%d %H:%M') if widget.updated_at else 'Never' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-1"></i>
+            No widgets configured. Create widgets in Node-RED to see them here.
+          </div>
+          {% endif %}
+          
+          <div class="mt-3">
+            <button class="btn btn-primary" onclick="saveNodeRedSettings()">
+              <i class="fas fa-save me-1"></i>Save Settings
+            </button>
+            <a href="{{ node_red_connection.url }}" target="_blank" class="btn btn-secondary ms-2">
+              <i class="fas fa-external-link-alt me-1"></i>Open Node-RED Dashboard
+            </a>
+          </div>
+          {% else %}
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            <strong>Node-RED Not Configured</strong><br>
+            Node-RED integration allows you to create advanced automation workflows for support ticket handling.<br><br>
+            <a href="#" class="btn btn-primary btn-sm" onclick="configureNodeRed()">
+              <i class="fas fa-cog me-1"></i>Configure Node-RED
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+
+<style>
+/* Preview Styles */
+.preview-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.mini-navbar {
+    background: var(--bs-primary);
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.mini-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+}
+
+.mini-content {
+    padding: 15px;
+}
+
+.mini-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.mini-card-header {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.mini-card-body {
+    padding: 12px;
+}
+
+.mini-button {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 2px;
+    border-radius: 0.25rem;
+    font-size: 10px;
+    text-align: center;
+    color: white;
+}
+
+.mini-button.primary {
+    background: var(--bs-primary);
+}
+
+.mini-button.secondary {
+    background: var(--bs-secondary);
+}
+
+.mini-button.accent {
+    background: var(--bs-success);
+}
+
+.color-preview-grid {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.color-preview-square {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Keep preview card below navbar when sticky */
+.sticky-top.preview-sticky {
+    top: var(--navbar-offset, 88px);
+    z-index: 100; /* ensure it stays well below navbar */
+}
+</style>
+
+<script>
+// Color scheme definitions
+const colorSchemes = {
+    blue: { primary: '#0d6efd', secondary: '#6c757d', accent: '#198754' },
+    green: { primary: '#198754', secondary: '#6c757d', accent: '#0d6efd' },
+    purple: { primary: '#6f42c1', secondary: '#6c757d', accent: '#20c997' },
+    red: { primary: '#dc3545', secondary: '#6c757d', accent: '#198754' },
+    dark: { primary: '#212529', secondary: '#495057', accent: '#20c997' },
+    custom: { primary: '{{ appearance.primary_color }}', secondary: '{{ appearance.secondary_color }}', accent: '{{ appearance.accent_color }}' }
+};
+
+function toggleCustomColors() {
+    const scheme = document.getElementById('color_scheme').value;
+    const customSection = document.getElementById('customColorSection');
+    
+    // Use Bootstrap display utility classes to avoid !important conflicts
+    const showCustom = (scheme === 'custom');
+    customSection.classList.toggle('d-none', !showCustom);
+    customSection.classList.toggle('d-block', showCustom);
+    if (!showCustom) {
+        updatePreviewColors(colorSchemes[scheme]);
+    }
+    updateColorPreview();
+}
+
+function updateColorPreview() {
+    const scheme = document.getElementById('color_scheme').value;
+    const previewGrid = document.getElementById('colorPreview');
+    
+    let colors;
+    if (scheme === 'custom') {
+        colors = {
+            primary: document.getElementById('primary_color').value,
+            secondary: document.getElementById('secondary_color').value,
+            accent: document.getElementById('accent_color').value
+        };
+    } else {
+        colors = colorSchemes[scheme];
+    }
+    
+    previewGrid.innerHTML = `
+        <div class="color-preview-square" style="background-color: ${colors.primary}" title="Primary"></div>
+        <div class="color-preview-square" style="background-color: ${colors.secondary}" title="Secondary"></div>
+        <div class="color-preview-square" style="background-color: ${colors.accent}" title="Accent"></div>
+    `;
+    
+    updatePreviewColors(colors);
+}
+
+function updatePreviewColors(colors) {
+    document.documentElement.style.setProperty('--bs-primary', colors.primary);
+    document.documentElement.style.setProperty('--bs-secondary', colors.secondary);
+    document.documentElement.style.setProperty('--bs-success', colors.accent);
+}
+
+// Compute sticky offset based on actual navbar height
+function setStickyPreviewOffset() {
+    const navbar = document.querySelector('nav.navbar.sticky-top');
+    const rectHeight = navbar ? navbar.getBoundingClientRect().height : 72;
+    const styles = navbar ? window.getComputedStyle(navbar) : null;
+    const marginBottom = styles ? parseFloat(styles.marginBottom || '0') : 0;
+    // add buffer for safety across breakpoints
+    const offset = Math.round(rectHeight + marginBottom + 12);
+    document.documentElement.style.setProperty('--navbar-offset', offset + 'px');
+}
+
+function updateAIControls() {
+    const providerEl = document.getElementById('ai_provider');
+    if (!providerEl) return;
+    const provider = providerEl.value;
+    const baseUrlGroup = document.getElementById('ai_base_url_group');
+    const orgGroup = document.getElementById('ai_org_group');
+
+    const needsBaseUrl = ['azure_openai', 'ollama', 'custom'].includes(provider);
+    if (baseUrlGroup) baseUrlGroup.style.display = needsBaseUrl ? 'block' : 'none';
+    if (orgGroup) orgGroup.style.display = (provider === 'openai') ? 'block' : 'none';
+}
+
+function previewLogo(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewLogo = document.getElementById('previewLogo');
+            const existingImg = previewLogo.querySelector('img');
+            
+            if (existingImg) {
+                existingImg.src = e.target.result;
+            } else {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.height = '20px';
+                img.alt = 'Logo';
+                previewLogo.insertBefore(img, previewLogo.firstChild);
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function previewChanges() {
+    const companyName = document.getElementById('company_name').value;
+    document.getElementById('previewCompanyName').textContent = companyName;
+    
+    // Update colors
+    toggleCustomColors();
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all settings to defaults? This will undo all customizations.')) {
+        document.getElementById('company_name').value = 'Support System';
+        document.getElementById('color_scheme').value = 'blue';
+        document.getElementById('custom_css').value = '';
+        document.getElementById('logo').value = '';
+        document.getElementById('favicon').value = '';
+        
+        // Reset custom colors
+        document.getElementById('primary_color').value = '#0d6efd';
+        document.getElementById('secondary_color').value = '#6c757d';
+        document.getElementById('accent_color').value = '#198754';
+        
+        toggleCustomColors();
+        previewChanges();
+    }
+}
+
+// Initialize preview on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateColorPreview();
+    setStickyPreviewOffset();
+    
+    // Ensure correct tab is visible based on ?tab= even if server-side active_tab misaligns
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const raw = (params.get('tab') || '').trim().toLowerCase();
+        const alias = {
+            ai: 'ai-integration',
+            ai_integration: 'ai-integration',
+            'ai-knowledge-base': 'ai-knowledge',
+            knowledge: 'ai-knowledge',
+            analytics: 'ai-analytics',
+            telegram: 'telegram-groups',
+            node: 'node-red',
+            node_red: 'node-red',
+            'escalation-rules': 'escalation'
+        };
+        const valid = ['general','ai-integration','telegram-groups','ai-knowledge','ai-analytics','templates','users','escalation','node-red'];
+        const tab = valid.includes(alias[raw] || raw) ? (alias[raw] || raw) : 'general';
+        for (const id of valid) {
+            const el = document.getElementById('tab-' + id);
+            if (!el) continue;
+            el.classList.toggle('d-none', id !== tab);
+            el.classList.toggle('d-block', id === tab);
+        }
+        // Update nav active state
+        document.querySelectorAll('.nav.nav-tabs .nav-link').forEach(a => {
+            try {
+                const href = a.getAttribute('href') || '';
+                const url = new URL(href, window.location.origin);
+                const t = (url.searchParams.get('tab') || 'general').toLowerCase();
+                a.classList.toggle('active', t === tab);
+            } catch(e) {}
+        });
+    } catch (e) {
+        console.warn('Tab fallback failed', e);
+    }
+    
+    // Add event listeners for real-time preview
+    document.getElementById('company_name').addEventListener('input', function() {
+        document.getElementById('previewCompanyName').textContent = this.value;
+    });
+    
+    document.getElementById('primary_color').addEventListener('change', updateColorPreview);
+    document.getElementById('secondary_color').addEventListener('change', updateColorPreview);
+    document.getElementById('accent_color').addEventListener('change', updateColorPreview);
+
+    // AI controls visibility
+    const aiProvider = document.getElementById('ai_provider');
+    if (aiProvider) {
+        aiProvider.addEventListener('change', updateAIControls);
+        updateAIControls();
+    }
+
+    // Recompute offset when window resizes or navbar collapses/expands
+    window.addEventListener('resize', setStickyPreviewOffset);
+    const navCollapse = document.getElementById('navbarNav');
+    if (navCollapse) {
+        navCollapse.addEventListener('shown.bs.collapse', setStickyPreviewOffset);
+        navCollapse.addEventListener('hidden.bs.collapse', setStickyPreviewOffset);
+    }
+
+    // Dynamic AI models dropdown
+    const loadBtn = document.getElementById('loadModelsBtn');
+    const modelInput = document.getElementById('ai_model');
+    const modelSelect = document.getElementById('ai_model_select');
+    const statusEl = document.getElementById('ai_models_status');
+    const baseUrlEl = document.getElementById('ai_base_url');
+    const apiKeyEl = document.getElementById('ai_api_key');
+    const orgEl = document.getElementById('ai_organization');
+
+    function setStatus(text, isError=false){
+        if (!statusEl) return;
+        statusEl.textContent = text || '';
+        statusEl.classList.toggle('text-danger', !!isError);
+    }
+
+    async function fetchModels(){
+        if (!aiProvider) return;
+        const provider = aiProvider.value;
+        setStatus('Fetching models...');
+        loadBtn?.setAttribute('disabled', 'disabled');
+        try {
+            const payload = {
+                provider,
+                base_url: baseUrlEl?.value || '',
+                organization: orgEl?.value || '',
+                api_key: apiKeyEl?.value || ''
+            };
+            const resp = await fetch("{{ url_for('api_list_ai_models') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (!resp.ok || !data.success){
+                throw new Error(data.message || ('HTTP ' + resp.status));
+            }
+            populateModels(data.models || []);
+            setStatus(`Loaded ${data.models.length} models from ${data.source || data.provider}`);
+        } catch (e){
+            console.error('Model fetch failed', e);
+            setStatus('Failed to load models. Check credentials and endpoint.', true);
+            modelSelect.style.display = 'none';
+        } finally {
+            loadBtn?.removeAttribute('disabled');
+        }
+    }
+
+    function populateModels(models){
+        modelSelect.innerHTML = '';
+        if (!models || models.length === 0){
+            modelSelect.style.display = 'none';
+            return;
+        }
+        // Ensure current value is present as first option for convenience
+        const currentVal = (modelInput?.value || '').trim();
+        const seen = new Set();
+        if (currentVal){
+            const opt = document.createElement('option');
+            opt.value = currentVal;
+            opt.textContent = currentVal + ' (current)';
+            modelSelect.appendChild(opt);
+            seen.add(currentVal);
+        }
+        for (const m of models){
+            const id = typeof m === 'string' ? m : (m.id || m.label);
+            const label = (typeof m === 'string') ? m : (m.label || m.id);
+            if (!id || seen.has(id)) continue;
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = label;
+            modelSelect.appendChild(opt);
+            seen.add(id);
+        }
+        modelSelect.style.display = 'block';
+        // Keep select synced with input
+        modelSelect.value = currentVal || modelSelect.options[0]?.value || '';
+    }
+
+    modelSelect?.addEventListener('change', function(){
+        if (modelInput) modelInput.value = this.value;
+    });
+
+    loadBtn?.addEventListener('click', fetchModels);
+
+    // Auto-refresh model list on provider/base URL/API key changes (debounced)
+    function debounce(fn, delay){
+        let t; return (...args)=>{ clearTimeout(t); t = setTimeout(()=>fn(...args), delay); };
+    }
+    const debouncedFetch = debounce(fetchModels, 600);
+    aiProvider?.addEventListener('change', fetchModels);
+    baseUrlEl?.addEventListener('input', debouncedFetch);
+    apiKeyEl?.addEventListener('input', debouncedFetch);
+});
+
+// Function to confirm user deletion
+function confirmDeleteUser(button) {
+    const userId = button.getAttribute('data-user-id');
+    const username = button.getAttribute('data-username');
+    
+    if (confirm(`Are you sure you want to delete user "${username}"?`)) {
+        // For now, just redirect to the delete endpoint
+        // In production, you might want to use AJAX or a form submission
+        window.location.href = `/users/${userId}/delete`;
+    }
+}
+
+// Function to delete template
+function deleteTemplate(button) {
+    const templateId = button.getAttribute('data-template-id');
+    
+    if (confirm('Are you sure you want to delete this template?')) {
+        // Redirect to delete endpoint or use AJAX
+        window.location.href = `/templates/${templateId}/delete`;
+    }
+}
+
+// Function to delete escalation rule
+function deleteEscalationRule(button) {
+    const ruleId = button.getAttribute('data-rule-id');
+    
+    if (confirm('Are you sure you want to delete this escalation rule?')) {
+        window.location.href = `/escalation_rules/${ruleId}/delete`;
+    }
+}
+
+// Function to edit Telegram group
+function editGroup(button) {
+    const groupId = button.getAttribute('data-group-id');
+    // Open edit modal or redirect to edit page
+    window.location.href = `/telegram_groups/${groupId}/edit`;
+}
+
+// Function to delete Telegram group
+function deleteGroup(button) {
+    const groupId = button.getAttribute('data-group-id');
+    
+    if (confirm('Are you sure you want to delete this Telegram group?')) {
+        window.location.href = `/telegram_groups/${groupId}/delete`;
+    }
+}
+
+// Node-RED helper functions
+function testNodeRedConnection() {
+    const url = document.getElementById('node-red-url').value;
+    if (url) {
+        alert('Testing connection to: ' + url);
+        // In production, make an AJAX call to test the connection
+    }
+}
+
+function saveNodeRedSettings() {
+    const url = document.getElementById('node-red-url').value;
+    if (url) {
+        alert('Saving Node-RED settings...');
+        // In production, submit the form or make an AJAX call
+    }
+}
+
+function configureNodeRed() {
+    // Show configuration modal or guide
+    alert('Node-RED configuration guide will be shown here');
+}
+
+// Client-side tab fallback to ensure correct tab visibility
+document.addEventListener('DOMContentLoaded', function() {
+    // Get tab from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    let activeTab = urlParams.get('tab') || 'general';
+    
+    // Normalize tab aliases
+    const tabAliases = {
+        'ai': 'ai-integration',
+        'ai_integration': 'ai-integration',
+        'telegram': 'telegram-groups',
+        'telegram_groups': 'telegram-groups',
+        'knowledge': 'ai-knowledge',
+        'ai_knowledge': 'ai-knowledge',
+        'analytics': 'ai-analytics',
+        'ai_analytics': 'ai-analytics',
+        'node_red': 'node-red',
+        'escalation_rules': 'escalation'
+    };
+    
+    if (tabAliases[activeTab]) {
+        activeTab = tabAliases[activeTab];
+    }
+    
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            
+            // Hide all tabs
+            document.querySelectorAll('[id^="tab-"]').forEach(t => {
+                t.classList.add('d-none');
+            });
+            
+            // Show target tab
+            const targetTab = document.getElementById(targetId);
+            if (targetTab) {
+                targetTab.classList.remove('d-none');
+                
+                // Initialize Users tab when shown
+                if (targetId === 'tab-users' && window.initializeUsersTab) {
+                    window.initializeUsersTab();
+                }
+            }
+            
+            // Update active state
+            document.querySelectorAll('[data-bs-toggle="tab"]').forEach(t => {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
+        });
+    });
+
+    // Show the active tab
+    const activeTabEl = document.getElementById('tab-' + activeTab);
+    if (activeTabEl) {
+        activeTabEl.classList.remove('d-none');
+        activeTabEl.classList.add('d-block');
+    }
+    
+    // Update nav tab active states
+    document.querySelectorAll('.nav-tabs .nav-link').forEach(link => {
+        link.classList.remove('active');
+        const href = link.getAttribute('href');
+        if (href && href.includes('tab=' + activeTab)) {
+            link.classList.add('active');
+        }
+    });
+});
+</script>
+
+<!-- Telegram Groups tab script -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const tableBody = document.querySelector('#groupsTable tbody');
+  const addBtn = document.getElementById('btnAddGroup');
+  const alertBox = document.getElementById('groupsAlert');
+  const groupModalEl = document.getElementById('groupModal');
+  const groupModal = groupModalEl ? new bootstrap.Modal(groupModalEl) : null;
+  const deleteModalEl = document.getElementById('tgDeleteModal');
+  const deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl) : null;
+
+  if (!tableBody || !addBtn) return;
+
+  let editId = null;
+  let deleteId = null;
+
+  function showAlert(msg, type = 'warning') {
+    if (!alertBox) return;
+    alertBox.textContent = msg;
+    alertBox.classList.remove('d-none', 'alert-warning', 'alert-danger', 'alert-success');
+    alertBox.classList.add('alert-' + type);
+  }
+  function hideAlert() { alertBox?.classList.add('d-none'); }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    try { const d = new Date(iso); return d.toLocaleString(); } catch { return iso; }
+  }
+
+  async function loadGroups() {
+    hideAlert();
+    tableBody.innerHTML = '<tr><td colspan="6" class="text-muted">Loading...</td></tr>';
+    try {
+      const res = await fetch('/api/telegram_groups');
+      if (!res.ok) throw new Error('Failed to load');
+      const groups = await res.json();
+      if (!Array.isArray(groups)) throw new Error('Invalid response');
+      if (groups.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-muted">No groups configured.</td></tr>';
+        return;
+      }
+      tableBody.innerHTML = '';
+      groups.forEach(g => tableBody.appendChild(groupRow(g)));
+    } catch (e) {
+      tableBody.innerHTML = '';
+      showAlert('Failed to load groups. Please try again.');
+    }
+  }
+
+  function groupRow(g) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(g.name)}</td>
+      <td><code>${escapeHtml(g.telegram_group_id)}</code></td>
+      <td>${escapeHtml(g.description || '')}</td>
+      <td>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" ${g.is_active ? 'checked' : ''} data-id="${g.id}" data-action="toggle" />
+        </div>
+      </td>
+      <td>${fmtDate(g.created_at)}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-2" data-id="${g.id}" data-action="edit"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-outline-danger" data-id="${g.id}" data-action="delete"><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    return tr;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]+/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+  
+  // Telegram User IDs Management - Make functions globally accessible
+  let userIdCounter = 0;
+  
+  window.addUserIdField = function(userId, userName) {
+    userId = userId || '';
+    userName = userName || '';
+    userIdCounter++;
+    const userIdsList = document.getElementById('user-ids-list');
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'row mb-2';
+    fieldDiv.id = `user-id-field-${userIdCounter}`;
+    fieldDiv.innerHTML = `
+      <div class="col-md-6">
+        <input type="text" class="form-control" name="telegram_user_ids[]" 
+               placeholder="User ID (e.g., 123456789)" 
+               value="${escapeHtml(userId)}" pattern="[0-9]+" 
+               title="Please enter a numeric Telegram user ID">
+      </div>
+      <div class="col-md-5">
+        <input type="text" class="form-control" name="telegram_user_names[]" 
+               placeholder="Name/Description (e.g., John Doe)" 
+               value="${escapeHtml(userName)}">
+      </div>
+      <div class="col-md-1">
+        <button type="button" class="btn btn-outline-danger w-100" onclick="removeUserIdField('user-id-field-${userIdCounter}')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+    userIdsList.appendChild(fieldDiv);
+  }
+  
+  window.removeUserIdField = function(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.remove();
+    }
+  };
+
+  // Function to display saved users
+  window.displaySavedUsers = function() {
+    const userData = document.getElementById('telegram-users-data');
+    const savedUsersList = document.getElementById('saved-users-list');
+    const noUsersMessage = document.getElementById('no-users-message');
+    
+    if (userData && savedUsersList && noUsersMessage) {
+      let users = [];
+      try {
+        users = JSON.parse(userData.dataset.userIds || '[]');
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        users = [];
+      }
+      
+      if (users.length === 0) {
+        noUsersMessage.style.display = 'block';
+        savedUsersList.innerHTML = '';
+      } else if (Array.isArray(users) && typeof users[0] === 'string') {
+        // Old format - convert to display
+        savedUsersList.innerHTML = '';
+        users.forEach(function(userId) {
+          if (userId) {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            item.innerHTML = '<div>' +
+              '<strong>User ID:</strong> <code>' + escapeHtml(userId) + '</code>' +
+              '<br><small class="text-muted">No name set</small>' +
+              '</div>' +
+              '<button class="btn btn-sm btn-outline-secondary" onclick="editSavedUser(\'' + escapeHtml(userId) + '\', \'\')">' +
+              '<i class="fas fa-edit"></i>' +
+              '</button>';
+            savedUsersList.appendChild(item);
+          }
+        });
+        noUsersMessage.style.display = 'none';
+      } else {
+        // New format with names
+        savedUsersList.innerHTML = '';
+        if (users.length > 0) {
+          users.forEach(function(user) {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const userName = escapeHtml(user.name || 'Unnamed User');
+            const userId = escapeHtml(user.id);
+            const userNameForEdit = escapeHtml(user.name || '');
+            item.innerHTML = '<div>' +
+              '<strong>' + userName + '</strong>' +
+              '<br><small class="text-muted">ID: <code>' + userId + '</code></small>' +
+              '</div>' +
+              '<button class="btn btn-sm btn-outline-secondary" onclick="editSavedUser(\'' + userId + '\', \'' + userNameForEdit + '\')">' +
+              '<i class="fas fa-edit"></i>' +
+              '</button>';
+            savedUsersList.appendChild(item);
+          });
+          noUsersMessage.style.display = 'none';
+        } else {
+          noUsersMessage.style.display = 'block';
+        }
+      }
+    }
+  };
+  
+  // Function to edit a saved user
+  window.editSavedUser = function(userId, userName) {
+    // Clear existing fields
+    document.getElementById('user-ids-list').innerHTML = '';
+    // Add the user to edit
+    window.addUserIdField(userId, userName);
+  };
+  
+  // Initialize Users tab when shown
+  window.initializeUsersTab = function() {
+    // Display saved users
+    if (window.displaySavedUsers) {
+      window.displaySavedUsers();
+    }
+    
+    // If no input fields exist, add one empty field for new entry
+    if (document.querySelectorAll('#user-ids-list .row').length === 0) {
+      window.addUserIdField();
+    }
+  };
+  
+  // Initialize on page load
+  setTimeout(function() {
+    // Initialize immediately if Users tab is active
+    const usersTab = document.getElementById('tab-users');
+    if (usersTab && !usersTab.classList.contains('d-none')) {
+      initializeUsersTab();
+    }
+  }, 100);
+
+  // Handle Add Users to Group form submission
+  document.getElementById('add-users-to-group-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const groupId = document.getElementById('target-group-id').value.trim();
+    const resultDiv = document.getElementById('add-users-result');
+    const addBtn = document.getElementById('add-users-btn');
+    
+    if (!groupId) {
+      resultDiv.innerHTML = '<div class="alert alert-danger">Please enter a group ID</div>';
+      return;
+    }
+    
+    // Get saved user IDs
+    const userIdInputs = document.querySelectorAll('input[name="telegram_user_ids[]"]');
+    const userIds = Array.from(userIdInputs)
+      .map(input => input.value.trim())
+      .filter(id => id !== '');
+    
+    if (userIds.length === 0) {
+      resultDiv.innerHTML = '<div class="alert alert-warning">No user IDs saved. Please add user IDs below first.</div>';
+      return;
+    }
+    
+    // Disable button and show loading
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Adding users...';
+    resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-1"></i>Adding users to group...</div>';
+    
+    try {
+      const response = await fetch('/api/add_users_to_group', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': document.querySelector('[name="csrf_token"]').value
+        },
+        body: JSON.stringify({
+          group_id: groupId,
+          user_ids: userIds
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.status === 'success') {
+        resultDiv.innerHTML = `
+          <div class="alert alert-success">
+            <i class="fas fa-check-circle me-1"></i>
+            <strong>Users added successfully!</strong><br>
+            Successfully added ${data.users_added} user(s) to the group.
+            ${data.failed_count > 0 ? `<br><small class="text-warning">${data.failed_count} user(s) could not be added (may not have interacted with bot).</small>` : ''}
+          </div>
+        `;
+      } else {
+        throw new Error(data.message || 'Failed to add users');
+      }
+    } catch (error) {
+      resultDiv.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-circle me-1"></i>
+          Error: ${error.message}
+        </div>
+      `;
+    } finally {
+      // Re-enable button
+      addBtn.disabled = false;
+      addBtn.innerHTML = '<i class="fas fa-user-plus me-1"></i>Add Saved Users to Group';
+    }
+  });
+
+  addBtn.addEventListener('click', () => {
+    editId = null;
+    document.getElementById('groupModalTitle').textContent = 'Add Group';
+    document.getElementById('groupName').value = '';
+    document.getElementById('groupId').value = '';
+    document.getElementById('groupDesc').value = '';
+    document.getElementById('groupActive').checked = true;
+    document.getElementById('addSavedUsers').checked = false;
+    document.getElementById('addSavedUsersDiv').style.display = 'block'; // Show only for new groups
+    groupModal?.show();
+  });
+
+  document.getElementById('saveGroupBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('groupName').value.trim();
+    const telegram_group_id = document.getElementById('groupId').value.trim();
+    const description = document.getElementById('groupDesc').value.trim();
+    const is_active = document.getElementById('groupActive').checked;
+    const add_saved_users = document.getElementById('addSavedUsers').checked;
+    
+    if (!name || !telegram_group_id) {
+      showAlert('Name and Telegram Group ID are required.', 'danger');
+      return;
+    }
+    try {
+      const url = editId ? `/api/telegram_groups/${editId}` : '/api/telegram_groups';
+      const payload = { name, telegram_group_id, description, is_active };
+      
+      // Only include add_saved_users for new groups
+      if (!editId && add_saved_users) {
+        payload.add_saved_users = true;
+      }
+      
+      const res = await fetch(url, {
+        method: editId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      
+      const result = await res.json();
+      groupModal?.hide();
+      await loadGroups();
+      
+      if (result.users_added && result.users_added > 0) {
+        showAlert(`Group saved successfully! Added ${result.users_added} user(s) to the group.`, 'success');
+      } else {
+        showAlert('Group saved successfully.', 'success');
+      }
+    } catch (e) {
+      showAlert(`Error: ${e.message}`, 'danger');
+    }
+  });
+
+  tableBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const id = btn.getAttribute('data-id');
+    const action = btn.getAttribute('data-action');
+    if (action === 'edit') {
+      const row = btn.closest('tr');
+      const cells = row.querySelectorAll('td');
+      editId = id;
+      document.getElementById('groupModalTitle').textContent = 'Edit Group';
+      document.getElementById('groupName').value = cells[0].textContent.trim();
+      document.getElementById('groupId').value = cells[1].innerText.trim();
+      document.getElementById('groupDesc').value = cells[2].textContent.trim();
+      document.getElementById('groupActive').checked = row.querySelector('input[type="checkbox"]').checked;
+      document.getElementById('addSavedUsersDiv').style.display = 'none'; // Hide for editing
+      groupModal?.show();
+    } else if (action === 'delete') {
+      deleteId = id;
+      deleteModal?.show();
+    }
+  });
+
+  document.getElementById('confirmDeleteGroupBtn')?.addEventListener('click', async () => {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`/api/telegram_groups/${deleteId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
+      deleteModal?.hide();
+      await loadGroups();
+      showAlert('Group deactivated.', 'success');
+    } catch (e) {
+      showAlert('Failed to deactivate group: ' + (e.message || e), 'danger');
+    } finally {
+      deleteId = null;
+    }
+  });
+
+  tableBody.addEventListener('change', async (e) => {
+    const input = e.target;
+    if (input.matches('input[type="checkbox"][data-action="toggle"]')) {
+      const id = input.getAttribute('data-id');
+      try {
+        const res = await fetch(`/api/telegram_groups/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: input.checked })
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (e) {
+        input.checked = !input.checked;
+        showAlert('Failed to update status.', 'danger');
+      }
+    }
+  });
+
+  // Initial load
+  loadGroups();
+});
+</script>
+
+<!-- Knowledge Base delete helper -->
+<script>
+window.confirmDelete = function(entryId, entryTitle) {
+    const titleEl = document.getElementById('deleteEntryTitle');
+    if (titleEl) titleEl.textContent = entryTitle;
+    const form = document.getElementById('deleteForm');
+    if (form) form.action = '/ai-knowledge/delete/' + entryId;
+    const modalEl = document.getElementById('kbDeleteModal');
+    if (modalEl) new bootstrap.Modal(modalEl).show();
+};
+
+// Delegated click handler for Knowledge Base delete buttons
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.kb-delete-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const id = btn.getAttribute('data-entry-id');
+    const title = btn.getAttribute('data-entry-title') || '';
+    if (id) window.confirmDelete(id, title);
+});
+</script>
+
+        </div> <!-- Close col-12 -->
+    </div> <!-- Close row -->
+</div> <!-- Close container-fluid -->
+
+{% endblock %}

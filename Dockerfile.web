@@ -1,0 +1,25 @@
+# Flask Web (Gunicorn)
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install runtime dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Copy project
+COPY . /app
+
+# Ensure instance dir exists (mounted as volume at runtime)
+RUN mkdir -p /app/instance
+
+# Add entrypoint
+COPY docker/entrypoint-web.sh /entrypoint-web.sh
+RUN chmod +x /entrypoint-web.sh
+
+EXPOSE 5001
+
+CMD ["/entrypoint-web.sh"]

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}AI Knowledge Base{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-brain me-2"></i>AI Knowledge Base</h2>
+                <a href="{{ url_for('add_knowledge') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Knowledge Entry
+                </a>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Entries</h6>
+                                    <h3>{{ knowledge_entries|length }}</h3>
+                                </div>
+                                <i class="fas fa-database fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Active Entries</h6>
+                                    <h3>{{ knowledge_entries|selectattr('is_active')|list|length }}</h3>
+                                </div>
+                                <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Categories</h6>
+                                    <h3>{{ knowledge_entries|map(attribute='category')|unique|list|length }}</h3>
+                                </div>
+                                <i class="fas fa-tags fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Avg Usage</h6>
+                                    <h3>{{ "%.1f"|format((knowledge_entries|sum(attribute='usage_count') / knowledge_entries|length) if knowledge_entries else 0) }}</h3>
+                                </div>
+                                <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Knowledge Base Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Knowledge Base Entries</h5>
+                </div>
+                <div class="card-body">
+                    {% if knowledge_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Confidence</th>
+                                    <th>Usage Count</th>
+                                    <th>Success Rate</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in knowledge_entries %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ entry.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ entry.question_pattern[:100] }}{% if entry.question_pattern|length > 100 %}...{% endif %}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ entry.category.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td>{{ "%.0f"|format(entry.confidence_threshold * 100) }}%</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ entry.usage_count }}</span>
+                                    </td>
+                                    <td>
+                                        {% if entry.usage_count > 0 %}
+                                            {% set success_color = 'success' if entry.success_rate >= 0.7 else 'warning' if entry.success_rate >= 0.5 else 'danger' %}
+                                            <span class="badge bg-{{ success_color }}">{{ "%.0f"|format(entry.success_rate * 100) }}%</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ entry.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('edit_knowledge', id=entry.id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    onclick="confirmDelete({{ entry.id }}, '{{ entry.title }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-brain fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Knowledge Base Entries</h5>
+                        <p class="text-muted">Start building your AI support system by adding knowledge entries.</p>
+                        <a href="{{ url_for('add_knowledge') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add First Entry
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the knowledge entry "<span id="deleteEntryTitle"></span>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(entryId, entryTitle) {
+    document.getElementById('deleteEntryTitle').textContent = entryTitle;
+    document.getElementById('deleteForm').action = '/ai-knowledge/delete/' + entryId;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

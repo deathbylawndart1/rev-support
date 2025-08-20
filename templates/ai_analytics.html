@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}AI Analytics - Support Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar"></i> AI Support Analytics</h2>
+        <p class="text-muted">Analytics and insights for AI-powered support features</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_analyses }}</h4>
+                        <p>Total Analyses</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-brain fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_auto_responses }}</h4>
+                        <p>Auto Responses</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-robot fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ active_sessions }}</h4>
+                        <p>Active Sessions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-comments fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ kb_performance|length }}</h4>
+                        <p>KB Entries</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-database fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Analytics -->
+<div class="row">
+    <!-- Category Distribution -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Category Distribution</h5>
+            </div>
+            <div class="card-body">
+                {% if category_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set total_categories = category_stats|sum(attribute=1) %}
+                                {% for category, count in category_stats %}
+                                <tr>
+                                    <td>{{ category or 'Uncategorized' }}</td>
+                                    <td>{{ count }}</td>
+                                    <td>
+                                        {% if total_categories > 0 %}
+                                            {{ "%.1f"|format((count / total_categories) * 100) }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No category data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Knowledge Base Performance -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Top Knowledge Base Entries</h5>
+            </div>
+            <div class="card-body">
+                {% if kb_performance %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Usage</th>
+                                    <th>Success Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in kb_performance %}
+                                <tr>
+                                    <td>{{ entry.title[:50] }}{% if entry.title|length > 50 %}...{% endif %}</td>
+                                    <td>{{ entry.usage_count }}</td>
+                                    <td>
+                                        {% if entry.success_rate %}
+                                            <span class="badge bg-{% if entry.success_rate >= 80 %}success{% elif entry.success_rate >= 60 %}warning{% else %}danger{% endif %}">
+                                                {{ "%.1f"|format(entry.success_rate) }}%
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No knowledge base performance data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Auto Responses -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Auto Responses</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_responses %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>User Message</th>
+                                    <th>Knowledge Base Entry</th>
+                                    <th>Response</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for response, message_text, kb_title in recent_responses %}
+                                <tr>
+                                    <td>{{ response.created_at.strftime('%m/%d %H:%M') }}</td>
+                                    <td>{{ message_text[:50] }}{% if message_text|length > 50 %}...{% endif %}</td>
+                                    <td>{{ kb_title or 'N/A' }}</td>
+                                    <td>{{ response.response_text[:100] }}{% if response.response_text|length > 100 %}...{% endif %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent auto responses available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>AI Analytics:</strong> This dashboard provides insights into AI-powered support features including message analysis, auto-responses, and knowledge base performance. Data is updated in real-time as the AI processes support requests.
+        </div>
+    </div>
+</div>
+{% endblock %}

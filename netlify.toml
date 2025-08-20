@@ -1,0 +1,19 @@
+[build]
+  publish = "."
+  command = "echo 'Flask app ready for deployment'"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[dev]
+  command = "python3 app.py"
+  port = 5000
+
+# Flask application settings
+[context.production.environment]
+  FLASK_ENV = "production"

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}{{ appearance_settings.company_name }} - Support System{% endblock %}</title>
+    
+    <!-- Favicon -->
+    {% if appearance_settings.favicon_filename %}
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='uploads/' + appearance_settings.favicon_filename) }}">
+    {% else %}
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    {% endif %}
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    {# Page-specific head additions (fonts, CSS, meta) #}
+    {% block extra_head %}{% endblock %}
+    
+    {# Compute theme variables to avoid CSS parse errors from Jinja control flow #}
+    {% set primary = '#0d6efd' %}
+    {% set secondary = '#6c757d' %}
+    {% set success = '#198754' %}
+    {% set app_bg = '#ffffff' %}
+    {% set app_fg = '#000000' %}
+    {% set card_bg = '#ffffff' %}
+    {% set card_border = '#dee2e6' %}
+    {% if appearance_settings.color_scheme == 'custom' %}
+        {% set primary = appearance_settings.primary_color %}
+        {% set secondary = appearance_settings.secondary_color %}
+        {% set success = appearance_settings.accent_color %}
+    {% elif appearance_settings.color_scheme == 'green' %}
+        {% set primary = '#198754' %}
+        {% set secondary = '#6c757d' %}
+        {% set success = '#0d6efd' %}
+    {% elif appearance_settings.color_scheme == 'purple' %}
+        {% set primary = '#6f42c1' %}
+        {% set secondary = '#6c757d' %}
+        {% set success = '#20c997' %}
+    {% elif appearance_settings.color_scheme == 'red' %}
+        {% set primary = '#dc3545' %}
+        {% set secondary = '#6c757d' %}
+        {% set success = '#198754' %}
+    {% elif appearance_settings.color_scheme == 'dark' %}
+        {% set primary = '#212529' %}
+        {% set secondary = '#495057' %}
+        {% set success = '#20c997' %}
+        {% set app_bg = '#1a1a1a' %}
+        {% set app_fg = '#ffffff' %}
+        {% set card_bg = '#2d2d2d' %}
+        {% set card_border = '#404040' %}
+    {% endif %}
+    
+    <!-- Dynamic Color Scheme -->
+    <style>
+        :root {
+            --bs-primary: {{ primary }};
+            --bs-secondary: {{ secondary }};
+            --bs-success: {{ success }};
+            --app-bg: {{ app_bg }};
+            --app-fg: {{ app_fg }};
+            --card-bg: {{ card_bg }};
+            --card-border: {{ card_border }};
+        }
+        
+        /* Apply color scheme */
+        .btn-primary {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+            opacity: 0.9;
+        }
+        
+        .navbar-brand {
+            color: white !important;
+        }
+        /* Ensure navbar always overlays sticky side panels */
+        .navbar.sticky-top {
+            z-index: 1050 !important; /* above sticky elements (1020) and our preview (900) */
+        }
+        
+        .bg-primary {
+            background-color: var(--bs-primary) !important;
+        }
+        
+        .text-primary {
+            color: var(--bs-primary) !important;
+        }
+        
+        .border-primary {
+            border-color: var(--bs-primary) !important;
+        }
+        
+        body {
+            background-color: var(--app-bg);
+            color: var(--app-fg);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--card-border);
+        }
+        
+        /* Custom CSS from admin settings */
+        {{ (appearance_settings.custom_css or '')|safe }}
+    </style>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top py-2">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                {% if appearance_settings.logo_filename %}
+                    <img src="{{ url_for('static', filename='uploads/' + appearance_settings.logo_filename) }}" 
+                         alt="Logo" style="height: 30px; margin-right: 10px;">
+                {% else %}
+                    <i class="fas fa-headset"></i>
+                {% endif %}
+                {{ appearance_settings.company_name }}
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" aria-current="{% if request.endpoint == 'dashboard' %}page{% else %}false{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'messages' %}active{% endif %}" aria-current="{% if request.endpoint == 'messages' %}page{% else %}false{% endif %}" href="{{ url_for('messages') }}">
+                            <i class="fas fa-envelope me-2"></i> Messages
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'schedule' %}active{% endif %}" aria-current="{% if request.endpoint == 'schedule' %}page{% else %}false{% endif %}" href="{{ url_for('schedule') }}">
+                            <i class="fas fa-calendar-alt me-2"></i> Schedule
+                        </a>
+                    </li>
+                    <!-- Templates link removed from navbar -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'escalation_rules' %}active{% endif %}" aria-current="{% if request.endpoint == 'escalation_rules' %}page{% else %}false{% endif %}" href="{{ url_for('escalation_rules') }}">
+                            <i class="fas fa-arrow-up me-2"></i> Escalation
+                        </a>
+                    </li>
+                    <!-- Users link removed from navbar -->
+                    {# Telegram Groups, AI Knowledge Base, and AI Analytics moved under Admin Settings tabs #}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin_settings' %}active{% endif %}" aria-current="{% if request.endpoint == 'admin_settings' %}page{% else %}false{% endif %}" href="{{ url_for('admin_settings') }}">
+                            <i class="fas fa-cog me-2"></i> Admin Settings
+                        </a>
+                    </li>
+                    <!-- Node-RED Dashboard link removed from navbar -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'units' %}active{% endif %}" aria-current="{% if request.endpoint == 'units' %}page{% else %}false{% endif %}" href="{{ url_for('units') }}">
+                            <i class="fas fa-industry me-2"></i> Units
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-2"></i>{{ current_user.first_name }}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="container-fluid mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

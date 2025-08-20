@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - Support Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-edit"></i> Edit User: {{ user.username }}</h2>
+                <a href="{{ url_for('users') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">User Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="username" class="form-label">Username *</label>
+                                            <input type="text" class="form-control" id="username" name="username" 
+                                                   value="{{ user.username }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="email" class="form-label">Email *</label>
+                                            <input type="email" class="form-control" id="email" name="email" 
+                                                   value="{{ user.email }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="first_name" class="form-label">First Name *</label>
+                                            <input type="text" class="form-control" id="first_name" name="first_name" 
+                                                   value="{{ user.first_name }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="last_name" class="form-label">Last Name *</label>
+                                            <input type="text" class="form-control" id="last_name" name="last_name" 
+                                                   value="{{ user.last_name }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                                   value="{{ user.phone or '' }}" placeholder="+1-555-123-4567">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="department" class="form-label">Department</label>
+                                            <select class="form-control" id="department" name="department">
+                                                <option value="">Select Department</option>
+                                                <option value="Engineering" {{ 'selected' if user.department == 'Engineering' }}>Engineering</option>
+                                                <option value="DevOps" {{ 'selected' if user.department == 'DevOps' }}>DevOps</option>
+                                                <option value="Support" {{ 'selected' if user.department == 'Support' }}>Support</option>
+                                                <option value="QA" {{ 'selected' if user.department == 'QA' }}>QA</option>
+                                                <option value="Management" {{ 'selected' if user.department == 'Management' }}>Management</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="telegram_user_id" class="form-label">Telegram User ID</label>
+                                    <input type="text" class="form-control" id="telegram_user_id" name="telegram_user_id" 
+                                           value="{{ user.telegram_user_id or '' }}" 
+                                           placeholder="e.g., 123456789">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Required for receiving Telegram notifications. User can get this by messaging @userinfobot
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" 
+                                           placeholder="Leave blank to keep current password">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Only enter a password if you want to change it
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" 
+                                                   {{ 'checked' if user.is_admin }}>
+                                            <label class="form-check-label" for="is_admin">
+                                                <i class="fas fa-crown text-warning"></i> Administrator
+                                            </label>
+                                            <div class="form-text">Can manage users, schedules, and system settings</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                                   {{ 'checked' if user.is_active }}>
+                                            <label class="form-check-label" for="is_active">
+                                                <i class="fas fa-user-check text-success"></i> Active
+                                            </label>
+                                            <div class="form-text">User can log in and receive notifications</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Update User
+                                    </button>
+                                    <a href="{{ url_for('users') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">User Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Member Since:</strong><br>
+                                <span class="text-muted">{{ user.created_at.strftime('%B %d, %Y') }}</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Status:</strong><br>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                                
+                                {% if user.is_admin %}
+                                    <span class="badge bg-warning">Admin</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <strong>Telegram Integration:</strong><br>
+                                {% if user.telegram_user_id %}
+                                    <span class="badge bg-success">
+                                        <i class="fab fa-telegram"></i> Connected
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fab fa-telegram"></i> Not Connected
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <strong>Messages Assigned:</strong><br>
+                                <span class="text-muted">{{ user.assigned_messages|length }}</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <strong>Responses Sent:</strong><br>
+                                <span class="text-muted">{{ user.responses|length }}</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <strong>Schedule Slots:</strong><br>
+                                <span class="text-muted">{{ user.schedule_slots|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if user.id != current_user.id %}
+                    <div class="card mt-3">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="card-title mb-0">Danger Zone</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Permanently delete this user account. This action cannot be undone.
+                            </p>
+                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" 
+                                  onsubmit="return confirm('Are you sure you want to delete {{ user.username }}? This action cannot be undone.')">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete User
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

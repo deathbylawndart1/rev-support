@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Add Knowledge Entry{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus-circle me-2"></i>Add Knowledge Entry</h2>
+                <a href="{{ url_for('ai_knowledge') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Knowledge Base
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Knowledge Entry Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="mb-3">
+                                    {{ form.title.label(class="form-label") }}
+                                    {{ form.title(class="form-control") }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.title.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.question_pattern.label(class="form-label") }}
+                                    {{ form.question_pattern(class="form-control", rows="3") }}
+                                    <div class="form-text">Describe the type of question or problem this entry addresses.</div>
+                                    {% if form.question_pattern.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.question_pattern.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.solution_text.label(class="form-label") }}
+                                    {{ form.solution_text(class="form-control", rows="5") }}
+                                    <div class="form-text">Provide the complete solution or answer.</div>
+                                    {% if form.solution_text.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.solution_text.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.category.label(class="form-label") }}
+                                            {{ form.category(class="form-select") }}
+                                            {% if form.category.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.category.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.confidence_threshold.label(class="form-label") }}
+                                            {{ form.confidence_threshold(class="form-select") }}
+                                            <div class="form-text">Minimum confidence required for auto-response.</div>
+                                            {% if form.confidence_threshold.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.confidence_threshold.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.keywords.label(class="form-label") }}
+                                    {{ form.keywords(class="form-control") }}
+                                    <div class="form-text">Comma-separated keywords that help identify this type of question.</div>
+                                    {% if form.keywords.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.keywords.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.troubleshooting_steps.label(class="form-label") }}
+                                    {{ form.troubleshooting_steps(class="form-control", rows="4") }}
+                                    <div class="form-text">
+                                        Optional: JSON array of step-by-step troubleshooting instructions.<br>
+                                        Example: ["Check your internet connection", "Clear browser cache", "Try logging in again"]
+                                    </div>
+                                    {% if form.troubleshooting_steps.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.troubleshooting_steps.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_active(class="form-check-input") }}
+                                        {{ form.is_active.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end">
+                                    <a href="{{ url_for('ai_knowledge') }}" class="btn btn-secondary me-2">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Knowledge Entry
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Tips for Creating Knowledge Entries</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6><i class="fas fa-lightbulb text-warning me-2"></i>Question Pattern</h6>
+                                <p class="small text-muted">Write a clear description of the type of question this addresses. Use natural language that users might actually type.</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6><i class="fas fa-check-circle text-success me-2"></i>Solution</h6>
+                                <p class="small text-muted">Provide a complete, step-by-step solution. Be clear and concise. Include any necessary links or references.</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6><i class="fas fa-tags text-info me-2"></i>Keywords</h6>
+                                <p class="small text-muted">Include important keywords that users might mention when asking about this topic. This helps the AI match questions more accurately.</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6><i class="fas fa-sliders-h text-primary me-2"></i>Confidence Threshold</h6>
+                                <p class="small text-muted">
+                                    <strong>70%</strong> is recommended for most entries.<br>
+                                    <strong>Lower</strong> = more auto-responses<br>
+                                    <strong>Higher</strong> = fewer, but more accurate responses
+                                </p>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-robot me-2"></i>
+                                <strong>AI Learning:</strong> The system will learn from user feedback and improve matching over time.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Escalation Rules - Support Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-arrow-up"></i> Escalation Rules</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
+                    <i class="fas fa-plus"></i> Add Rule
+                </button>
+            </div>
+
+            <!-- Current Rules -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cogs"></i> Current Escalation Rules
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if rules %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Priority</th>
+                                            <th>Escalation Timeout</th>
+                                            <th>Max Escalation Level</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rule in rules %}
+                                        <tr>
+                                            <td>
+                                                {% if rule.priority == 'critical' %}
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-exclamation-triangle"></i> Critical
+                                                    </span>
+                                                {% elif rule.priority == 'high' %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-arrow-up"></i> High
+                                                    </span>
+                                                {% elif rule.priority == 'normal' %}
+                                                    <span class="badge bg-primary">
+                                                        <i class="fas fa-minus"></i> Normal
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-arrow-down"></i> Low
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ rule.escalation_timeout }}</strong> seconds
+                                                <br>
+                                                <small class="text-muted">
+                                                    ({{ (rule.escalation_timeout / 60)|round|int }} minutes)
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">Level {{ rule.max_escalation_level }}</span>
+                                            </td>
+                                            <td>
+                                                {% if rule.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ rule.created_at.strftime('%b %d, %Y') }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-outline-primary" 
+                                                            data-rule-id="{{ rule.id }}" 
+                                                            data-priority="{{ rule.priority }}" 
+                                                            data-timeout="{{ rule.escalation_timeout }}" 
+                                                            data-max-level="{{ rule.max_escalation_level }}" 
+                                                            onclick="editRule(this)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form method="POST" action="{{ url_for('delete_escalation_rule', rule_id=rule.id) }}" class="d-inline">
+                                                        <button type="submit" class="btn btn-outline-danger" 
+                                                                onclick="return confirm('Delete escalation rule for {{ rule.priority }} priority?')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-arrow-up fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">No Escalation Rules</h4>
+                                <p class="text-muted">Create escalation rules to automatically notify backup staff when messages aren't responded to in time.</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
+                                    <i class="fas fa-plus"></i> Add First Rule
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-question-circle"></i> How Escalation Works
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-clock"></i> Escalation Timeline</h6>
+                                    <ol>
+                                        <li><strong>Message Received:</strong> Support request comes in via Telegram</li>
+                                        <li><strong>Primary Notification:</strong> On-call person is notified immediately</li>
+                                        <li><strong>Timeout Check:</strong> System waits for the configured timeout period</li>
+                                        <li><strong>Escalation:</strong> If no response, backup staff are notified</li>
+                                        <li><strong>Repeat:</strong> Process continues up to max escalation level</li>
+                                    </ol>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-layer-group"></i> Priority Levels</h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <span class="badge bg-danger me-2">Critical</span>
+                                            Immediate attention required (outages, security)
+                                        </li>
+                                        <li class="mb-2">
+                                            <span class="badge bg-warning me-2">High</span>
+                                            Important issues affecting multiple users
+                                        </li>
+                                        <li class="mb-2">
+                                            <span class="badge bg-primary me-2">Normal</span>
+                                            Standard support requests
+                                        </li>
+                                        <li class="mb-2">
+                                            <span class="badge bg-secondary me-2">Low</span>
+                                            General questions and minor issues
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Rule Modal -->
+<div class="modal fade" id="addRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ruleModalTitle">Add Escalation Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="ruleForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Priority Level *</label>
+                        <select class="form-control" id="priority" name="priority" required>
+                            <option value="">Select Priority</option>
+                            <option value="critical">Critical - Immediate attention required</option>
+                            <option value="high">High - Important issues</option>
+                            <option value="normal">Normal - Standard requests</option>
+                            <option value="low">Low - General questions</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="escalation_timeout" class="form-label">Escalation Timeout (seconds) *</label>
+                        <input type="number" class="form-control" id="escalation_timeout" name="escalation_timeout" 
+                               min="60" max="7200" required>
+                        <div class="form-text">
+                            Time to wait before escalating to backup staff (60 seconds to 2 hours)
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_escalation_level" class="form-label">Maximum Escalation Level *</label>
+                        <select class="form-control" id="max_escalation_level" name="max_escalation_level" required>
+                            <option value="1">Level 1 - Primary only</option>
+                            <option value="2">Level 2 - Primary + 1 backup</option>
+                            <option value="3" selected>Level 3 - Primary + 2 backups</option>
+                            <option value="4">Level 4 - Primary + 3 backups</option>
+                            <option value="5">Level 5 - Primary + 4 backups</option>
+                        </select>
+                        <div class="form-text">
+                            Maximum number of escalation levels before stopping
+                        </div>
+                    </div>
+
+                    <!-- Quick Presets -->
+                    <div class="mb-3">
+                        <label class="form-label">Quick Presets:</label>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                    onclick="setPreset('critical', 300, 3)">
+                                Critical: 5 minutes, 3 levels
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                    onclick="setPreset('high', 600, 3)">
+                                High: 10 minutes, 3 levels
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                    onclick="setPreset('normal', 900, 2)">
+                                Normal: 15 minutes, 2 levels
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                    onclick="setPreset('low', 1800, 2)">
+                                Low: 30 minutes, 2 levels
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Rule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editRule(button) {
+    const priority = button.getAttribute('data-priority');
+    const timeout = button.getAttribute('data-timeout');
+    const maxLevel = button.getAttribute('data-max-level');
+    
+    document.getElementById('ruleModalTitle').textContent = 'Edit Escalation Rule';
+    document.getElementById('priority').value = priority;
+    document.getElementById('escalation_timeout').value = timeout;
+    document.getElementById('max_escalation_level').value = maxLevel;
+    
+    new bootstrap.Modal(document.getElementById('addRuleModal')).show();
+}
+
+function setPreset(priority, timeout, maxLevel) {
+    document.getElementById('priority').value = priority;
+    document.getElementById('escalation_timeout').value = timeout;
+    document.getElementById('max_escalation_level').value = maxLevel;
+}
+
+// Reset form when modal is closed
+document.getElementById('addRuleModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('ruleModalTitle').textContent = 'Add Escalation Rule';
+    document.getElementById('ruleForm').reset();
+});
+</script>
+{% endblock %}

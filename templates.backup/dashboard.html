@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Support System{% endblock %}
+
+{% block content %}
+<div class="row animate-in">
+    <div class="col-12 mb-4">
+        <h1 class="display-4 fw-bold" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <i class="fas fa-tachometer-alt"></i> Support Dashboard
+        </h1>
+        <p class="lead" style="color: rgba(255, 255, 255, 0.9);">Welcome back, {{ current_user.first_name }}! Here's your system overview.</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border: none; animation-delay: 0.1s;">
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-1" style="color: var(--gradient-start);">{{ stats.total }}</h2>
+                        <p class="mb-0 text-muted small text-uppercase">Total Messages</p>
+                    </div>
+                    <div class="stat-icon" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-envelope fa-xl text-white"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 5px; background: rgba(0,0,0,0.1); border-radius: 10px;">
+                    <div class="progress-bar" style="width: 100%; background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border: none; animation-delay: 0.2s;">
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-1" style="color: #ffc107;">{{ stats.open }}</h2>
+                        <p class="mb-0 text-muted small text-uppercase">Open</p>
+                    </div>
+                    <div class="stat-icon" style="width: 60px; height: 60px; background: linear-gradient(135deg, #ffc107, #ff9800); border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-exclamation-circle fa-xl text-white"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 5px; background: rgba(0,0,0,0.1); border-radius: 10px;">
+                    <div class="progress-bar" style="width: {% if stats.total > 0 %}{{ (stats.open / stats.total * 100)|round }}{% else %}0{% endif %}%; background: linear-gradient(90deg, #ffc107, #ff9800);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border: none; animation-delay: 0.3s;">
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-1" style="color: #0dcaf0;">{{ stats.in_progress }}</h2>
+                        <p class="mb-0 text-muted small text-uppercase">In Progress</p>
+                    </div>
+                    <div class="stat-icon" style="width: 60px; height: 60px; background: linear-gradient(135deg, #0dcaf0, #0d9dcd); border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-clock fa-xl text-white"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 5px; background: rgba(0,0,0,0.1); border-radius: 10px;">
+                    <div class="progress-bar" style="width: {% if stats.total > 0 %}{{ (stats.in_progress / stats.total * 100)|round }}{% else %}0{% endif %}%; background: linear-gradient(90deg, #0dcaf0, #0d9dcd);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border: none; animation-delay: 0.4s;">
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-1" style="color: var(--gradient-end);">{{ stats.resolved }}</h2>
+                        <p class="mb-0 text-muted small text-uppercase">Resolved</p>
+                    </div>
+                    <div class="stat-icon" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--gradient-end), #0f7938); border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check-circle fa-xl text-white"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 5px; background: rgba(0,0,0,0.1); border-radius: 10px;">
+                    <div class="progress-bar" style="width: {% if stats.total > 0 %}{{ (stats.resolved / stats.total * 100)|round }}{% else %}0{% endif %}%; background: linear-gradient(90deg, var(--gradient-end), #0f7938);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current On-Call and Recent Messages -->
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card" style="animation-delay: 0.5s;">
+            <div class="card-header" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color: white; border: none; border-radius: 15px 15px 0 0;">
+                <h5 class="mb-0"><i class="fas fa-user-clock me-2"></i> Current On-Call</h5>
+            </div>
+            <div class="card-body">
+                {% if current_on_call %}
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, var(--gradient-end), #0f7938); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h6 class="mb-1 fw-bold">{{ current_on_call.first_name }} {{ current_on_call.last_name }}</h6>
+                            <p class="text-muted mb-1 small">{{ current_on_call.email }}</p>
+                            <span class="badge" style="background: linear-gradient(135deg, var(--gradient-end), #0f7938); color: white;">On Duty</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center">
+                        <i class="fas fa-user-slash fa-3x mb-2" style="color: rgba(108, 117, 125, 0.5);"></i>
+                        <p class="text-muted">No one currently on-call</p>
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('schedule') }}" class="btn btn-gradient btn-sm">
+                                <i class="fas fa-calendar-plus"></i> Set Schedule
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8 mb-4">
+        <div class="card" style="animation-delay: 0.6s;">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color: white; border: none; border-radius: 15px 15px 0 0;">
+                <h5 class="mb-0"><i class="fas fa-clock me-2"></i> Recent Messages</h5>
+                <a href="{{ url_for('messages') }}" class="btn btn-sm btn-light" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                    View All <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    <div class="list-group list-group-flush">
+                        {% for message in messages %}
+                            <div class="list-group-item" style="background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem;">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold">
+                                            {{ message.telegram_first_name }} {{ message.telegram_last_name or '' }}
+                                            {% if message.telegram_username %}
+                                                <small class="text-muted">@{{ message.telegram_username }}</small>
+                                            {% endif %}
+                                        </h6>
+                                        <p class="mb-1 text-muted">{{ message.message_text[:100] }}{% if message.message_text|length > 100 %}...{% endif %}</p>
+                                        <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <div class="ms-2">
+                                        <span class="badge" style="background: {% if message.status == 'open' %}linear-gradient(135deg, #ffc107, #ff9800){% elif message.status == 'in_progress' %}linear-gradient(135deg, #0dcaf0, #0d9dcd){% elif message.status == 'resolved' %}linear-gradient(135deg, var(--gradient-end), #0f7938){% else %}linear-gradient(135deg, #dc3545, #c82333){% endif %}; color: white;">
+                                            {{ message.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="{{ url_for('message_detail', message_id=message.id) }}" class="btn btn-sm btn-gradient">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center" style="padding: 3rem;">
+                        <i class="fas fa-inbox fa-3x mb-2" style="color: rgba(108, 117, 125, 0.5);"></i>
+                        <p class="text-muted">No messages yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" style="animation-delay: 0.7s;">
+            <div class="card-header" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color: white; border: none; border-radius: 15px 15px 0 0;">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('messages', status='open') }}" class="btn btn-gradient w-100 py-3" style="background: linear-gradient(135deg, #ffc107, #ff9800); border: none;">
+                            <i class="fas fa-exclamation-circle fa-2x mb-2"></i><br>
+                            <span class="fw-bold">View Open Messages</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('messages', status='in_progress') }}" class="btn btn-gradient w-100 py-3" style="background: linear-gradient(135deg, #0dcaf0, #0d9dcd); border: none;">
+                            <i class="fas fa-clock fa-2x mb-2"></i><br>
+                            <span class="fw-bold">In Progress Messages</span>
+                        </a>
+                    </div>
+                    {% if current_user.is_admin %}
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('schedule') }}" class="btn btn-gradient w-100 py-3">
+                            <i class="fas fa-calendar-alt fa-2x mb-2"></i><br>
+                            <span class="fw-bold">Manage Schedule</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('users') }}" class="btn btn-gradient w-100 py-3" style="background: linear-gradient(135deg, #6c757d, #5a6268); border: none;">
+                            <i class="fas fa-users fa-2x mb-2"></i><br>
+                            <span class="fw-bold">Manage Users</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh dashboard every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}
