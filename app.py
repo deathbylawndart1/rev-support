@@ -35,6 +35,17 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 
+# Lightweight health check
+@app.route('/healthz', methods=['GET'])
+def healthz():
+    try:
+        # Touch the DB to ensure connectivity
+        _ = User.query.first()
+        return jsonify(status='ok'), 200
+    except Exception:
+        logger.exception('Health check failed')
+        return jsonify(status='error'), 500
+
 # Initialize conversation manager with Flask app context
 conversation_manager = ConversationManager(app)
 

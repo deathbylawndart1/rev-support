@@ -13,8 +13,21 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/support_system.db}
       - FLASK_ENV=${FLASK_ENV:-production}
       - PORT=${PORT:-5001}
+      # Optional initial admin auto-create on first run
+      - ADMIN_AUTO_CREATE=${ADMIN_AUTO_CREATE:-false}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME:-Admin}
+      - ADMIN_LAST_NAME=${ADMIN_LAST_NAME:-User}
     volumes:
       - support_instance:/app/instance
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5001/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
   bot:
@@ -30,6 +43,7 @@ services:
       - ESCALATION_TIMEOUT=${ESCALATION_TIMEOUT:-900}
       - SECRET_KEY=${SECRET_KEY:-change-me}
       - DATABASE_URL=${DATABASE_URL:-sqlite:////app/instance/support_system.db}
+      - WEB_WAIT_TIMEOUT=${WEB_WAIT_TIMEOUT:-60}
     depends_on:
       - web
     volumes:
